@@ -30,3 +30,19 @@ The app should be served over HTTPS for PWA features to work.
 - iOS requires Safari for Add to Home Screen.
 - Push notifications are not enabled here yet.
 
+## Docker + Traefik deployment
+
+### 1) Build and run the container (on the server)
+```bash
+cd /opt/healthsaga
+docker compose -f traefik/docker-compose.yml up -d --build
+```
+
+### 2) Requirements
+- A running Traefik instance on the `traefik-network` external network.
+- DNS pointing `healthsaga.iotitlan.com` to your server.
+
+### 3) Notes
+- If your Traefik is in a different network, update the network name in [traefik/docker-compose.yml](traefik/docker-compose.yml).
+- If you want a different domain, change the Host rules in [traefik/docker-compose.yml](traefik/docker-compose.yml).
+

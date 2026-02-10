@@ -1,0 +1,33 @@
+services:
+  healthsaga:
+    build: ..
+    image: healthsaga:latest
+    container_name: healthsaga
+    restart: unless-stopped
+    networks:
+      - traefik-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.healthsaga.loadbalancer.server.port=80"
+      - "traefik.docker.network=traefik-network"
+
+      # Redirect to HTTPS Middleware
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+      # Main router (lower priority)
+      - "traefik.http.routers.healthsaga.rule=Host(`healthsaga.iotitlan.com`)"
+      - "traefik.http.routers.healthsaga.entrypoints=websecure"
+      - "traefik.http.routers.healthsaga.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.healthsaga.service=healthsaga"
+      - "traefik.http.routers.healthsaga.priority=1"
+
+      # HTTP redirect router (redirects HTTP to HTTPS)
+      - "traefik.http.routers.healthsaga-redirect.rule=Host(`healthsaga.iotitlan.com`)"
+      - "traefik.http.routers.healthsaga-redirect.entrypoints=web"
+      - "traefik.http.routers.healthsaga-redirect.middlewares=redirect-to-https"
+      - "traefik.http.routers.healthsaga-redirect.priority=1"
+
+networks:
+  traefik-network:
+    external: true
