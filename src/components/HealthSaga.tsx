@@ -946,18 +946,32 @@ const HealthSaga = () => {
                 <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
                   Plate Proportions
                 </h3>
-                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                  <div style={{ flex: 1, padding: '16px', background: '#e4eff3', borderRadius: '12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '24px', fontWeight: '500', color: '#3d7a8a' }}>¼</div>
-                    <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>Protein</div>
-                  </div>
-                  <div style={{ flex: 1, padding: '16px', background: '#e4eff3', borderRadius: '12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '24px', fontWeight: '500', color: '#3d7a8a' }}>½</div>
-                    <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>Veggies</div>
-                  </div>
-                  <div style={{ flex: 1, padding: '16px', background: '#e4eff3', borderRadius: '12px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '24px', fontWeight: '500', color: '#3d7a8a' }}>¼</div>
-                    <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>Starch</div>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <svg
+                    width="160"
+                    height="120"
+                    viewBox="0 0 160 120"
+                    role="img"
+                    aria-label="Plate proportions: half veggies, quarter protein, quarter starch"
+                  >
+                    <rect x="2" y="2" width="156" height="116" rx="14" fill="#ffffff" stroke="#e0ddd8" strokeWidth="4" />
+                    <rect x="6" y="6" width="74" height="108" rx="10" fill="#3c9d6b" />
+                    <rect x="82" y="6" width="72" height="52" rx="10" fill="#e07a5f" />
+                    <rect x="82" y="62" width="72" height="52" rx="10" fill="#3d7a8a" />
+                  </svg>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '12px', height: '12px', background: '#3c9d6b', borderRadius: '50%' }} />
+                      <span style={{ fontSize: '13px', color: '#7a7a7a' }}>½ Veggies</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '12px', height: '12px', background: '#e07a5f', borderRadius: '50%' }} />
+                      <span style={{ fontSize: '13px', color: '#7a7a7a' }}>¼ Protein</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '12px', height: '12px', background: '#3d7a8a', borderRadius: '50%' }} />
+                      <span style={{ fontSize: '13px', color: '#7a7a7a' }}>¼ Starch</span>
+                    </div>
                   </div>
                 </div>
               </div>
