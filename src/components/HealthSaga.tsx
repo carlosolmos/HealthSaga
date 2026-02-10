@@ -17,6 +17,13 @@ type MeditationExercise = {
 
 type MindfulnessSlot = 'morning' | 'evening';
 
+type MetricsEntry = {
+  recordedAt: string;
+  bloodPressure: { systolic: string; diastolic: string };
+  heartRate: string;
+  weight: string;
+};
+
 function useLocalStorage<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
     try {
@@ -85,6 +92,30 @@ function loadTodayData(): typeof defaultTodayData {
   return defaultTodayData;
 }
 
+function exportLocalData(): void {
+  const keys = [
+    'healthsaga-today',
+    'healthsaga-metrics',
+    'healthsaga-metrics-history',
+    'healthsaga-reminders',
+    'healthsaga-mindfulness'
+  ];
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    data: Object.fromEntries(
+      keys.map((key) => [key, localStorage.getItem(key)])
+    )
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `healthsaga-local-export-${getToday()}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 const HealthSaga = () => {
   const [activeTab, setActiveTab] = useState('today');
   const [todayData, setTodayDataRaw] = useState(loadTodayData);
@@ -104,6 +135,34 @@ const HealthSaga = () => {
     heartRate: '',
     weight: ''
   });
+
+  const [metricsHistory, setMetricsHistory] = useLocalStorage<MetricsEntry[]>('healthsaga-metrics-history', []);
+
+  const handleSaveMetrics = () => {
+    const entry: MetricsEntry = {
+      recordedAt: new Date().toISOString(),
+      bloodPressure: {
+        systolic: metrics.bloodPressure.systolic.trim(),
+        diastolic: metrics.bloodPressure.diastolic.trim()
+      },
+      heartRate: metrics.heartRate.trim(),
+      weight: metrics.weight.trim()
+    };
+    const hasValues = Boolean(
+      entry.bloodPressure.systolic ||
+      entry.bloodPressure.diastolic ||
+      entry.heartRate ||
+      entry.weight
+    );
+    if (hasValues) {
+      setMetricsHistory(prev => [entry, ...prev].slice(0, 50));
+    }
+    setMetrics({
+      bloodPressure: { systolic: '', diastolic: '' },
+      heartRate: '',
+      weight: ''
+    });
+  };
 
   const [walkReminders, setWalkReminders] = useLocalStorage('healthsaga-reminders', [
     { time: '10:00 AM', label: 'Morning walk', enabled: true },
@@ -1108,6 +1167,8 @@ const HealthSaga = () => {
                 </div>
 
                 <button
+                  type="button"
+                  onClick={handleSaveMetrics}
                   style={{
                     width: '100%',
                     padding: '14px',
@@ -1124,6 +1185,59 @@ const HealthSaga = () => {
                 >
                   Save Metrics
                 </button>
+                <button
+                  type="button"
+                  onClick={exportLocalData}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '2px solid #e0ddd8',
+                    borderRadius: '12px',
+                    background: 'white',
+                    color: '#4a5550',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  Export Local Data
+                </button>
+                <div style={{ paddingTop: '8px' }}>
+                  <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '8px' }}>
+                    Recent readings
+                  </div>
+                  {metricsHistory.length === 0 ? (
+                    <div style={{ fontSize: '12px', color: '#9b9b9b' }}>No saved readings yet.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {metricsHistory.slice(0, 3).map((entry) => (
+                        <div
+                          key={entry.recordedAt}
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '10px',
+                            background: '#f5f3f0',
+                            color: '#4a5550',
+                            fontSize: '12px'
+                          }}
+                        >
+                          <div style={{ color: '#7a7a7a', marginBottom: '4px' }}>
+                            {new Date(entry.recordedAt).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit'
+                            })}
+                          </div>
+                          <div>
+                            BP {entry.bloodPressure.systolic || '--'}/{entry.bloodPressure.diastolic || '--'} • HR {entry.heartRate || '--'} • Wt {entry.weight || '--'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
