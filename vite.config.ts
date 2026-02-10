@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['pwa-icon.svg', 'pwa-maskable.svg'],
+      includeAssets: ['icon.svg'],
       manifest: {
         name: 'Health Saga',
         short_name: 'HealthSaga',
@@ -19,15 +19,10 @@ export default defineConfig({
         theme_color: '#0b1220',
         icons: [
           {
-            src: '/pwa-icon.svg',
+            src: '/icon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
-          },
-          {
-            src: '/pwa-maskable.svg',
-            sizes: 'any',
-            type: 'image/svg+xml',
-            purpose: 'maskable',
+            purpose: 'any maskable',
           },
         ],
       },
