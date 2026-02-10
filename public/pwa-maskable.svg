@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- Maskable icons should have safe padding; keep key artwork in the center. -->
+  <rect width="512" height="512" fill="#0b1220"/>
+  <g transform="translate(64 64)">
+    <rect width="384" height="384" rx="96" fill="#1f2a44"/>
+    <path d="M192 76c-48 0-87 39-87 87 0 49 39 89 87 89s87-40 87-89c0-48-39-87-87-87zm0 38c27 0 49 22 49 49 0 28-22 51-49 51s-49-23-49-51c0-27 22-49 49-49z" fill="#e7ecff" opacity="0.95"/>
+    <path d="M192 226c-62 0-113 38-134 93a18 18 0 0 0 17 25h234a18 18 0 0 0 17-25c-21-55-72-93-134-93zm0 36c40 0 74 19 93 48H99c19-29 53-48 93-48z" fill="#9bb3ff" opacity="0.95"/>
+    <path d="M268 150h-26v-26a12 12 0 0 0-24 0v26h-26a12 12 0 0 0 0 24h26v26a12 12 0 0 0 24 0v-26h26a12 12 0 0 0 0-24z" fill="#5bf0c4"/>
+  </g>
+</svg>

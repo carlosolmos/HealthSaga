@@ -1,5 +1,21 @@
-import { useState, useCallback } from 'react';
-import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, Calendar, ChevronRight, ChevronDown } from 'lucide-react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown } from 'lucide-react';
+import meditationExercisesData from '../data/meditation_exercises.json';
+
+type MeditationExercise = {
+  id: string;
+  name: string;
+  tradition: string;
+  duration: number;
+  difficulty: string;
+  goals: string[];
+  timeOfDay: string[];
+  primaryBenefit: string;
+  instructions: string[];
+  physiologicalEffects: string;
+};
+
+type MindfulnessSlot = 'morning' | 'evening';
 
 function useLocalStorage<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
@@ -36,6 +52,28 @@ function getToday(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function getMindfulnessSlot(date = new Date()): MindfulnessSlot {
+  const hour = date.getHours();
+  if (hour >= 5 && hour < 12) return 'morning';
+  return 'evening';
+}
+
+function getMindfulnessPool(exercises: MeditationExercise[], slot: MindfulnessSlot): MeditationExercise[] {
+  const slotMatches = exercises.filter(exercise => (
+    exercise.timeOfDay.includes(slot) || exercise.timeOfDay.includes('anytime')
+  ));
+  return slotMatches.length > 0 ? slotMatches : exercises;
+}
+
+function buildMindfulnessQueue(pool: MeditationExercise[]): string[] {
+  const ids = pool.map(exercise => exercise.id);
+  for (let i = ids.length - 1; i > 0; i -= 1) {
+    const swapIndex = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[swapIndex]] = [ids[swapIndex], ids[i]];
+  }
+  return ids;
+}
+
 function loadTodayData(): typeof defaultTodayData {
   try {
     const stored = localStorage.getItem('healthsaga-today');
@@ -47,7 +85,7 @@ function loadTodayData(): typeof defaultTodayData {
   return defaultTodayData;
 }
 
-const ZenHealthTracker = () => {
+const HealthSaga = () => {
   const [activeTab, setActiveTab] = useState('today');
   const [todayData, setTodayDataRaw] = useState(loadTodayData);
 
@@ -194,6 +232,51 @@ const ZenHealthTracker = () => {
     setExpandedFoodCategory(expandedFoodCategory === category ? null : category);
   };
 
+  const meditationExercises = (meditationExercisesData as { exercises: MeditationExercise[] }).exercises;
+  const mindfulnessSlot = getMindfulnessSlot();
+  const todayKey = getToday();
+  const mindfulnessPool = useMemo(
+    () => getMindfulnessPool(meditationExercises, mindfulnessSlot),
+    [meditationExercises, mindfulnessSlot]
+  );
+
+  const [mindfulnessState, setMindfulnessState] = useLocalStorage('healthsaga-mindfulness', {
+    date: todayKey,
+    slot: mindfulnessSlot,
+    remainingIds: [] as string[],
+    currentId: ''
+  });
+
+  useEffect(() => {
+    const currentValid = mindfulnessState.currentId
+      ? mindfulnessPool.some(exercise => exercise.id === mindfulnessState.currentId)
+      : false;
+
+    if (mindfulnessState.date !== todayKey || mindfulnessState.slot !== mindfulnessSlot || !currentValid) {
+      const queue = buildMindfulnessQueue(mindfulnessPool);
+      const [firstId, ...rest] = queue;
+      setMindfulnessState({
+        date: todayKey,
+        slot: mindfulnessSlot,
+        remainingIds: rest,
+        currentId: firstId ?? ''
+      });
+    }
+  }, [
+    mindfulnessState.date,
+    mindfulnessState.slot,
+    mindfulnessState.currentId,
+    mindfulnessPool,
+    mindfulnessSlot,
+    todayKey,
+    setMindfulnessState
+  ]);
+
+  const suggestedExercise = mindfulnessPool.find(exercise => exercise.id === mindfulnessState.currentId)
+    ?? mindfulnessPool[0];
+  const mindfulnessLabel = mindfulnessSlot === 'morning' ? 'Morning' : 'Evening';
+  const hasMoreSuggestions = mindfulnessState.remainingIds.length > 0;
+
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -201,7 +284,7 @@ const ZenHealthTracker = () => {
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
     }}>
       <div style={{ 
-        background: 'linear-gradient(135deg, #8b9d83 0%, #6b7c64 100%)',
+        background: 'linear-gradient(135deg, #5492a3 0%, #3d7a8a 100%)',
         padding: '32px 24px',
         color: 'white',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
@@ -232,7 +315,7 @@ const ZenHealthTracker = () => {
         top: 0,
         zIndex: 10
       }}>
-        {['today', 'meals', 'metrics', 'calendar'].map(tab => (
+        {['today', 'meals', 'metrics', 'mindfulness'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -241,11 +324,11 @@ const ZenHealthTracker = () => {
               padding: '16px',
               border: 'none',
               background: activeTab === tab ? '#f5f3f0' : 'white',
-              color: activeTab === tab ? '#6b7c64' : '#9b9b9b',
+              color: activeTab === tab ? '#3d7a8a' : '#9b9b9b',
               fontSize: '14px',
               fontWeight: activeTab === tab ? '500' : '400',
               cursor: 'pointer',
-              borderBottom: activeTab === tab ? '2px solid #8b9d83' : 'none',
+              borderBottom: activeTab === tab ? '2px solid #5492a3' : 'none',
               transition: 'all 0.3s ease',
               textTransform: 'capitalize'
             }}
@@ -267,7 +350,7 @@ const ZenHealthTracker = () => {
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <Droplet size={20} color="#7da8a0" />
+                <Droplet size={20} color="#bcd4da" />
                 <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
                   Morning Ritual
                 </h3>
@@ -277,9 +360,9 @@ const ZenHealthTracker = () => {
                 style={{
                   width: '100%',
                   padding: '14px',
-                  border: todayData.morningWater ? '2px solid #8b9d83' : '2px solid #e0ddd8',
+                  border: todayData.morningWater ? '2px solid #5492a3' : '2px solid #e0ddd8',
                   borderRadius: '12px',
-                  background: todayData.morningWater ? '#f0f4f0' : 'white',
+                  background: todayData.morningWater ? '#edf4f6' : 'white',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
@@ -290,7 +373,7 @@ const ZenHealthTracker = () => {
                 <span style={{ color: '#4a5550', fontSize: '14px' }}>
                   Hot water + lemon + salt
                 </span>
-                {todayData.morningWater && <Check size={18} color="#8b9d83" />}
+                {todayData.morningWater && <Check size={18} color="#5492a3" />}
               </button>
             </div>
 
@@ -318,9 +401,9 @@ const ZenHealthTracker = () => {
                       onClick={() => toggleSupplement('breakfast', supp.id)}
                       style={{
                         padding: '12px',
-                        border: todayData.supplements.breakfast[supp.id] ? '2px solid #8b9d83' : '2px solid #e0ddd8',
+                        border: todayData.supplements.breakfast[supp.id] ? '2px solid #5492a3' : '2px solid #e0ddd8',
                         borderRadius: '12px',
-                        background: todayData.supplements.breakfast[supp.id] ? '#f0f4f0' : 'white',
+                        background: todayData.supplements.breakfast[supp.id] ? '#edf4f6' : 'white',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -332,7 +415,7 @@ const ZenHealthTracker = () => {
                         <div style={{ color: '#4a5550', fontSize: '14px' }}>{supp.name}</div>
                         <div style={{ color: '#9b9b9b', fontSize: '12px' }}>{supp.count}</div>
                       </div>
-                      {todayData.supplements.breakfast[supp.id] && <Check size={18} color="#8b9d83" />}
+                      {todayData.supplements.breakfast[supp.id] && <Check size={18} color="#5492a3" />}
                     </button>
                   ))}
                 </div>
@@ -349,9 +432,9 @@ const ZenHealthTracker = () => {
                       onClick={() => toggleSupplement('dinner', supp.id)}
                       style={{
                         padding: '12px',
-                        border: todayData.supplements.dinner[supp.id] ? '2px solid #8b9d83' : '2px solid #e0ddd8',
+                        border: todayData.supplements.dinner[supp.id] ? '2px solid #5492a3' : '2px solid #e0ddd8',
                         borderRadius: '12px',
-                        background: todayData.supplements.dinner[supp.id] ? '#f0f4f0' : 'white',
+                        background: todayData.supplements.dinner[supp.id] ? '#edf4f6' : 'white',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -363,7 +446,7 @@ const ZenHealthTracker = () => {
                         <div style={{ color: '#4a5550', fontSize: '14px' }}>{supp.name}</div>
                         <div style={{ color: '#9b9b9b', fontSize: '12px' }}>{supp.count}</div>
                       </div>
-                      {todayData.supplements.dinner[supp.id] && <Check size={18} color="#8b9d83" />}
+                      {todayData.supplements.dinner[supp.id] && <Check size={18} color="#5492a3" />}
                     </button>
                   ))}
                 </div>
@@ -377,7 +460,7 @@ const ZenHealthTracker = () => {
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <Droplet size={20} color="#7da8a0" />
+                <Droplet size={20} color="#bcd4da" />
                 <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
                   Hydration
                 </h3>
@@ -385,7 +468,7 @@ const ZenHealthTracker = () => {
               <div style={{ marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span style={{ fontSize: '14px', color: '#7a7a7a' }}>{todayData.hydration} oz / 60 oz</span>
-                  <span style={{ fontSize: '14px', color: '#8b9d83', fontWeight: '500' }}>
+                  <span style={{ fontSize: '14px', color: '#5492a3', fontWeight: '500' }}>
                     {Math.round((todayData.hydration / 60) * 100)}%
                   </span>
                 </div>
@@ -398,7 +481,7 @@ const ZenHealthTracker = () => {
                   <div style={{ 
                     height: '100%', 
                     width: `${(todayData.hydration / 60) * 100}%`,
-                    background: 'linear-gradient(90deg, #7da8a0 0%, #8b9d83 100%)',
+                    background: 'linear-gradient(90deg, #bcd4da 0%, #5492a3 100%)',
                     transition: 'width 0.3s ease'
                   }} />
                 </div>
@@ -410,7 +493,7 @@ const ZenHealthTracker = () => {
                   padding: '14px',
                   border: 'none',
                   borderRadius: '12px',
-                  background: '#8b9d83',
+                  background: '#5492a3',
                   color: 'white',
                   cursor: 'pointer',
                   fontSize: '14px',
@@ -517,7 +600,7 @@ const ZenHealthTracker = () => {
                         padding: '6px 12px',
                         border: 'none',
                         borderRadius: '8px',
-                        background: reminder.enabled ? '#8b9d83' : '#e0ddd8',
+                        background: reminder.enabled ? '#5492a3' : '#e0ddd8',
                         color: reminder.enabled ? 'white' : '#7a7a7a',
                         cursor: 'pointer',
                         fontSize: '12px',
@@ -557,7 +640,7 @@ const ZenHealthTracker = () => {
                     padding: '8px 16px',
                     border: 'none',
                     borderRadius: '8px',
-                    background: '#8b9d83',
+                    background: '#5492a3',
                     color: 'white',
                     cursor: 'pointer',
                     fontSize: '13px',
@@ -606,13 +689,13 @@ const ZenHealthTracker = () => {
                       {expandedFoodCategory === 'protein' && (
                         <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
                           <div style={{ marginBottom: '12px' }}>
-                            <div style={{ fontSize: '13px', color: '#6b7c64', fontWeight: '500', marginBottom: '6px' }}>Plant Protein</div>
+                            <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Plant Protein</div>
                             <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
                               {foodLists.protein.plant.join(' • ')}
                             </div>
                           </div>
                           <div style={{ marginBottom: '12px' }}>
-                            <div style={{ fontSize: '13px', color: '#6b7c64', fontWeight: '500', marginBottom: '6px' }}>Animal Protein</div>
+                            <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Animal Protein</div>
                             <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
                               {foodLists.protein.animal.join(' • ')}
                             </div>
@@ -656,19 +739,19 @@ const ZenHealthTracker = () => {
                       </button>
                       {expandedFoodCategory === 'veggies' && (
                         <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
-                          <div style={{ padding: '8px 12px', background: '#e8f0ed', borderRadius: '8px', marginBottom: '12px' }}>
-                            <div style={{ fontSize: '12px', color: '#6b7c64', fontStyle: 'italic' }}>
+                          <div style={{ padding: '8px 12px', background: '#e4eff3', borderRadius: '8px', marginBottom: '12px' }}>
+                            <div style={{ fontSize: '12px', color: '#3d7a8a', fontStyle: 'italic' }}>
                               {foodLists.veggies.note}
                             </div>
                           </div>
                           <div style={{ marginBottom: '12px' }}>
-                            <div style={{ fontSize: '13px', color: '#6b7c64', fontWeight: '500', marginBottom: '6px' }}>Try These More Often</div>
+                            <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Try These More Often</div>
                             <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
                               {foodLists.veggies.preferred.join(' • ')}
                             </div>
                           </div>
                           <div>
-                            <div style={{ fontSize: '13px', color: '#6b7c64', fontWeight: '500', marginBottom: '6px' }}>Good Accessory Veggies</div>
+                            <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Good Accessory Veggies</div>
                             <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
                               {foodLists.veggies.accessory.join(' • ')}
                             </div>
@@ -707,7 +790,7 @@ const ZenHealthTracker = () => {
                       {expandedFoodCategory === 'starch' && (
                         <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
                           <div style={{ marginBottom: '12px' }}>
-                            <div style={{ fontSize: '13px', color: '#6b7c64', fontWeight: '500', marginBottom: '6px' }}>Approved Starches</div>
+                            <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Approved Starches</div>
                             <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
                               {foodLists.starch.approved.join(' • ')}
                             </div>
@@ -775,7 +858,7 @@ const ZenHealthTracker = () => {
                             <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>
                               {recipe.name}
                             </span>
-                            <span style={{ fontSize: '12px', color: '#8b9d83', fontWeight: '500' }}>
+                            <span style={{ fontSize: '12px', color: '#5492a3', fontWeight: '500' }}>
                               {recipe.protein}
                             </span>
                           </div>
@@ -806,14 +889,14 @@ const ZenHealthTracker = () => {
                             <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>
                               {recipe.name}
                             </span>
-                            <span style={{ fontSize: '12px', color: '#8b9d83', fontWeight: '500' }}>
+                            <span style={{ fontSize: '12px', color: '#5492a3', fontWeight: '500' }}>
                               {recipe.protein}
                             </span>
                           </div>
                           <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '8px' }}>
                             ⏱ {recipe.time}
                           </div>
-                          <div style={{ fontSize: '12px', color: '#6b7c64' }}>
+                          <div style={{ fontSize: '12px', color: '#3d7a8a' }}>
                             <div>¼ Protein: {recipe.plate.protein}</div>
                             <div>½ Veggies: {recipe.plate.veggies}</div>
                             <div>¼ Starch: {recipe.plate.starch}</div>
@@ -824,34 +907,6 @@ const ZenHealthTracker = () => {
                   </div>
                 </div>
               )}
-            </div>
-
-            <div style={{ 
-              background: 'white', 
-              borderRadius: '16px', 
-              padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <Utensils size={20} color="#a89d7f" />
-                <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
-                  Daily Goals
-                </h3>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '12px' }}>
-                  <div style={{ fontSize: '14px', color: '#7a7a7a', marginBottom: '4px' }}>Protein</div>
-                  <div style={{ fontSize: '20px', color: '#4a5550', fontWeight: '500' }}>100g / day</div>
-                </div>
-                <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '12px' }}>
-                  <div style={{ fontSize: '14px', color: '#7a7a7a', marginBottom: '4px' }}>Fiber</div>
-                  <div style={{ fontSize: '20px', color: '#4a5550', fontWeight: '500' }}>30g / day</div>
-                </div>
-                <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '12px' }}>
-                  <div style={{ fontSize: '14px', color: '#7a7a7a', marginBottom: '4px' }}>Sugar Limit</div>
-                  <div style={{ fontSize: '20px', color: '#4a5550', fontWeight: '500' }}>36g / day</div>
-                </div>
-              </div>
             </div>
 
             <div style={{ 
@@ -879,27 +934,61 @@ const ZenHealthTracker = () => {
               </div>
             </div>
 
-            <div style={{ 
-              background: 'white', 
-              borderRadius: '16px', 
-              padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
-            }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
-                Plate Proportions
-              </h3>
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ flex: 1, padding: '16px', background: '#e8f0ed', borderRadius: '12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: '500', color: '#6b7c64' }}>¼</div>
-                  <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>Protein</div>
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <div style={{ 
+                background: 'white', 
+                borderRadius: '16px', 
+                padding: '20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                flex: 1,
+                minWidth: '280px'
+              }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                  Plate Proportions
+                </h3>
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ flex: 1, padding: '16px', background: '#e4eff3', borderRadius: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: '500', color: '#3d7a8a' }}>¼</div>
+                    <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>Protein</div>
+                  </div>
+                  <div style={{ flex: 1, padding: '16px', background: '#e4eff3', borderRadius: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: '500', color: '#3d7a8a' }}>½</div>
+                    <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>Veggies</div>
+                  </div>
+                  <div style={{ flex: 1, padding: '16px', background: '#e4eff3', borderRadius: '12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '24px', fontWeight: '500', color: '#3d7a8a' }}>¼</div>
+                    <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>Starch</div>
+                  </div>
                 </div>
-                <div style={{ flex: 1, padding: '16px', background: '#e8f0ed', borderRadius: '12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: '500', color: '#6b7c64' }}>½</div>
-                  <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>Veggies</div>
+              </div>
+
+              <div style={{ 
+                background: 'white', 
+                borderRadius: '16px', 
+                padding: '20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                flex: 1,
+                minWidth: '280px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <Utensils size={18} color="#a89d7f" />
+                  <h3 style={{ margin: 0, fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>
+                    Daily Goals
+                  </h3>
                 </div>
-                <div style={{ flex: 1, padding: '16px', background: '#e8f0ed', borderRadius: '12px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '24px', fontWeight: '500', color: '#6b7c64' }}>¼</div>
-                  <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>Starch</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px' }}>Protein</div>
+                    <div style={{ fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>100g / day</div>
+                  </div>
+                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px' }}>Fiber</div>
+                    <div style={{ fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>30g / day</div>
+                  </div>
+                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px' }}>Sugar Limit</div>
+                    <div style={{ fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>36g / day</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -915,7 +1004,7 @@ const ZenHealthTracker = () => {
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <TrendingUp size={20} color="#7da8a0" />
+                <TrendingUp size={20} color="#bcd4da" />
                 <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
                   Health Metrics
                 </h3>
@@ -1010,7 +1099,7 @@ const ZenHealthTracker = () => {
                     padding: '14px',
                     border: 'none',
                     borderRadius: '12px',
-                    background: '#8b9d83',
+                    background: '#5492a3',
                     color: 'white',
                     cursor: 'pointer',
                     fontSize: '14px',
@@ -1038,7 +1127,7 @@ const ZenHealthTracker = () => {
           </div>
         )}
 
-        {activeTab === 'calendar' && (
+        {activeTab === 'mindfulness' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ 
               background: 'white', 
@@ -1047,68 +1136,101 @@ const ZenHealthTracker = () => {
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <Calendar size={20} color="#a89d7f" />
+                <Activity size={20} color="#a89d7f" />
                 <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
-                  Upcoming Tests
+                  Mindfulness Moment
                 </h3>
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ 
-                  padding: '16px', 
-                  border: '2px solid #e0ddd8',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
+              <div style={{
+                padding: '16px',
+                border: '2px solid #e0ddd8',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                   <div>
-                    <div style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>
-                      Metabolic Panel III
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px', fontWeight: '500' }}>
+                      {mindfulnessLabel} suggestion
+                    </div>
+                    <div style={{ fontSize: '16px', color: '#4a5550', fontWeight: '600' }}>
+                      {suggestedExercise.name}
                     </div>
                     <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>
-                      DHA Lab - Labcorp
+                      {suggestedExercise.tradition} • {suggestedExercise.duration} min • {suggestedExercise.difficulty}
                     </div>
                   </div>
-                  <ChevronRight size={18} color="#9b9b9b" />
+                  <button
+                    type="button"
+                    onClick={() => setMindfulnessState(prev => {
+                      if (prev.remainingIds.length === 0) return prev;
+                      const [nextId, ...rest] = prev.remainingIds;
+                      return { ...prev, remainingIds: rest, currentId: nextId };
+                    })}
+                    aria-label="Show another exercise"
+                    disabled={!hasMoreSuggestions}
+                    style={{
+                      border: 'none',
+                      background: '#f5f3f0',
+                      color: '#6b6b6b',
+                      borderRadius: '999px',
+                      width: '36px',
+                      height: '36px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: hasMoreSuggestions ? 'pointer' : 'not-allowed',
+                      opacity: hasMoreSuggestions ? 1 : 0.5
+                    }}
+                  >
+                    <ChevronRight size={18} color="#9b9b9b" />
+                  </button>
                 </div>
 
-                <div style={{ 
-                  padding: '16px', 
-                  border: '2px solid #e0ddd8',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>
-                      Sleep Apnea Test
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>
-                      Pending schedule
-                    </div>
-                  </div>
-                  <ChevronRight size={18} color="#9b9b9b" />
+                <div style={{ fontSize: '13px', color: '#6b6b6b' }}>
+                  {suggestedExercise.primaryBenefit}
                 </div>
 
-                <div style={{ 
-                  padding: '16px', 
-                  border: '2px solid #e0ddd8',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>
-                      Lab Results Review
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#7a7a7a', marginTop: '4px' }}>
-                      Zoom with Mishan
-                    </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                  {suggestedExercise.goals.map(goal => (
+                    <span
+                      key={goal}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '999px',
+                        background: '#f5f3f0',
+                        color: '#6b6b6b',
+                        fontSize: '11px',
+                        fontWeight: '500'
+                      }}
+                    >
+                      {goal.replace('_', ' ')}
+                    </span>
+                  ))}
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '6px' }}>
+                    Instructions
                   </div>
-                  <ChevronRight size={18} color="#9b9b9b" />
+                  <ol style={{ margin: 0, paddingLeft: '18px', color: '#4a5550', fontSize: '13px', lineHeight: 1.5 }}>
+                    {suggestedExercise.instructions.map((step, index) => (
+                      <li key={`${suggestedExercise.id}-step-${index}`}>{step}</li>
+                    ))}
+                  </ol>
+                </div>
+
+                <div style={{
+                  padding: '12px',
+                  borderRadius: '10px',
+                  background: '#f8f7f4',
+                  color: '#6b6b6b',
+                  fontSize: '12px',
+                  lineHeight: 1.5
+                }}>
+                  Physiological effects: {suggestedExercise.physiologicalEffects}
                 </div>
               </div>
             </div>
@@ -1119,4 +1241,4 @@ const ZenHealthTracker = () => {
   );
 };
 
-export default ZenHealthTracker;
+export default HealthSaga;

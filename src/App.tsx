@@ -1,5 +1,5 @@
-import ZenHealthTracker from './components/ZenHealthTracker'
+import HealthSaga from './components/HealthSaga'
 
 export default function App() {
-  return <ZenHealthTracker />
+  return <HealthSaga />
 }

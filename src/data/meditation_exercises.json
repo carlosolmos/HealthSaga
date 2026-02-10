@@ -1,0 +1,274 @@
+{
+  "exercises": [
+    {
+      "id": "sky_gazing_morning",
+      "name": "Sky Gazing (Semdzin)",
+      "tradition": "Dzogchen",
+      "duration": 5,
+      "difficulty": "beginner",
+      "goals": ["weight_loss", "muscle_gain", "maintenance"],
+      "timeOfDay": ["morning", "anytime"],
+      "primaryBenefit": "Cultivates natural awareness, reduces stress-eating triggers",
+      "instructions": [
+        "Sit comfortably outdoors or near a window with a view of the sky",
+        "Keep eyes open, gaze softly into the open sky without focusing on any object",
+        "Don't follow thoughts or try to stop them—let them dissolve naturally like clouds",
+        "Rest in the spacious quality of awareness itself",
+        "If distracted, gently return to the open gaze"
+      ],
+      "physiologicalEffects": "Regulates cortisol, enhances interoceptive awareness, calms sympathetic nervous system"
+    },
+    {
+      "id": "awareness_of_awareness",
+      "name": "Rigpa Recognition",
+      "tradition": "Dzogchen",
+      "duration": 10,
+      "difficulty": "intermediate",
+      "goals": ["weight_loss", "maintenance"],
+      "timeOfDay": ["before_meals", "anytime"],
+      "primaryBenefit": "Distinguishes physical hunger from emotional cravings",
+      "instructions": [
+        "Sit quietly and close your eyes",
+        "Notice that you are aware—turn awareness back on itself",
+        "Don't look for an object of awareness, rest as the awareness itself",
+        "When thoughts arise, recognize they appear within awareness but aren't separate from it",
+        "Rest in this non-dual recognition for the full duration"
+      ],
+      "physiologicalEffects": "Activates prefrontal cortex, strengthens impulse control, improves hunger hormone sensitivity"
+    },
+    {
+      "id": "body_scan_zernga",
+      "name": "Embodied Presence (Zernga-based)",
+      "tradition": "Dzogchen/Zernga",
+      "duration": 8,
+      "difficulty": "beginner",
+      "goals": ["muscle_gain", "weight_loss", "maintenance"],
+      "timeOfDay": ["post_workout", "evening"],
+      "primaryBenefit": "Enhances mind-muscle connection and recovery awareness",
+      "instructions": [
+        "Lie down or sit comfortably after physical activity",
+        "Bring attention to each muscle group, starting from feet upward",
+        "Don't visualize or manipulate—simply recognize the raw sensation",
+        "Notice tension, warmth, pulsation without labeling as good or bad",
+        "Rest in the direct knowing of bodily sensations as they are"
+      ],
+      "physiologicalEffects": "Improves proprioception, accelerates muscle recovery, enhances neuroplasticity"
+    },
+    {
+      "id": "breathing_space_recognition",
+      "name": "Natural Breath Awareness",
+      "tradition": "Dzogchen",
+      "duration": 7,
+      "difficulty": "beginner",
+      "goals": ["weight_loss", "muscle_gain", "maintenance"],
+      "timeOfDay": ["before_meals", "morning", "anytime"],
+      "primaryBenefit": "Activates parasympathetic nervous system, improves metabolic efficiency",
+      "instructions": [
+        "Sit comfortably with natural posture",
+        "Don't control the breath—let it breathe itself",
+        "Notice the space between breaths, the gap where nothing is happening",
+        "Rest attention in that spacious gap without forcing",
+        "Allow breath rhythm to settle naturally"
+      ],
+      "physiologicalEffects": "Optimizes oxygen efficiency, reduces stress hormones, balances autonomic nervous system"
+    },
+    {
+      "id": "trekcho_stillness",
+      "name": "Cutting Through (Trekchö)",
+      "tradition": "Dzogchen",
+      "duration": 15,
+      "difficulty": "advanced",
+      "goals": ["weight_loss", "maintenance"],
+      "timeOfDay": ["morning", "evening"],
+      "primaryBenefit": "Dissolves habitual patterns including emotional eating",
+      "instructions": [
+        "Sit in complete stillness, eyes open or closed",
+        "When a thought arises, recognize its empty nature immediately",
+        "Don't follow, suppress, or engage—let it self-liberate on arising",
+        "Rest in the natural state between thoughts",
+        "Maintain this recognition without effort or strain"
+      ],
+      "physiologicalEffects": "Rewires habit loops in basal ganglia, reduces amygdala reactivity, strengthens executive function"
+    },
+    {
+      "id": "pre_meal_mindfulness",
+      "name": "Pre-Meal Awareness Practice",
+      "tradition": "Dzogchen/Applied",
+      "duration": 3,
+      "difficulty": "beginner",
+      "goals": ["weight_loss", "maintenance"],
+      "timeOfDay": ["before_meals"],
+      "primaryBenefit": "Distinguishes true hunger from habit or emotion",
+      "instructions": [
+        "Before eating, pause and sit for 3 minutes",
+        "Scan your body: Where do you feel hunger? Is it in the stomach or mind?",
+        "Notice any emotional states without judgment",
+        "Ask: 'Am I physically hungry or seeking comfort?'",
+        "Proceed with your meal from this clarity"
+      ],
+      "physiologicalEffects": "Improves leptin sensitivity, activates satiety signals, reduces impulsive eating"
+    },
+    {
+      "id": "visualization_recovery",
+      "name": "Muscle Recovery Visualization",
+      "tradition": "Adapted from Dzogchen visualization practices",
+      "duration": 10,
+      "difficulty": "intermediate",
+      "goals": ["muscle_gain"],
+      "timeOfDay": ["post_workout", "before_sleep"],
+      "primaryBenefit": "Accelerates muscle protein synthesis and recovery",
+      "instructions": [
+        "Lie down in a comfortable position",
+        "Visualize the muscles you trained as glowing with warmth and energy",
+        "Imagine nutrients flowing to those areas, repairing and strengthening fibers",
+        "See the muscles growing stronger and more defined",
+        "Rest in this visualization without forcing, let it be natural and easeful"
+      ],
+      "physiologicalEffects": "Enhances mind-muscle neural pathways, may increase IGF-1 signaling, improves recovery quality"
+    },
+    {
+      "id": "walking_meditation",
+      "name": "Mindful Movement Practice",
+      "tradition": "Dzogchen/Kinetic",
+      "duration": 20,
+      "difficulty": "beginner",
+      "goals": ["weight_loss", "muscle_gain", "maintenance"],
+      "timeOfDay": ["morning", "afternoon", "evening"],
+      "primaryBenefit": "Combines gentle cardio with awareness training",
+      "instructions": [
+        "Walk at a natural pace outdoors or indoors",
+        "Feel each footstep fully—heel, arch, toe",
+        "Let eyes rest softly on the path ahead without staring",
+        "When mind wanders, gently return to the sensation of walking",
+        "Don't make it a task—walk as if you're already arrived"
+      ],
+      "physiologicalEffects": "Increases NEAT (non-exercise activity thermogenesis), improves insulin sensitivity, reduces cortisol"
+    },
+    {
+      "id": "sound_dissolution",
+      "name": "Sound as Gateway to Awareness",
+      "tradition": "Dzogchen",
+      "duration": 10,
+      "difficulty": "intermediate",
+      "goals": ["weight_loss", "maintenance"],
+      "timeOfDay": ["anytime"],
+      "primaryBenefit": "Reduces rumination that triggers stress-eating",
+      "instructions": [
+        "Sit quietly in a space with ambient sounds",
+        "Listen to sounds without naming them or tracking their source",
+        "Notice how sounds arise, exist briefly, and dissolve",
+        "Recognize that awareness of sound is more fundamental than the sound itself",
+        "Rest in the hearing awareness, not in the sounds heard"
+      ],
+      "physiologicalEffects": "Reduces default mode network activity, quiets mental chatter, lowers stress hormones"
+    },
+    {
+      "id": "energy_circulation",
+      "name": "Subtle Energy Awareness",
+      "tradition": "Tibetan Yoga/Dzogchen",
+      "duration": 12,
+      "difficulty": "intermediate",
+      "goals": ["muscle_gain", "maintenance"],
+      "timeOfDay": ["morning", "pre_workout"],
+      "primaryBenefit": "Mobilizes energy for physical performance",
+      "instructions": [
+        "Sit with spine naturally erect",
+        "Breathe naturally and notice any sensations of energy, warmth, or tingling",
+        "Don't force or visualize—simply recognize what's already present",
+        "Notice energy concentrating in certain areas (often belly, chest, hands)",
+        "Allow this energy to circulate naturally without directing it"
+      ],
+      "physiologicalEffects": "May enhance mitochondrial function, improves interoception, primes nervous system for activity"
+    },
+    {
+      "id": "emotion_recognition",
+      "name": "Emotion as Energy Practice",
+      "tradition": "Dzogchen",
+      "duration": 8,
+      "difficulty": "advanced",
+      "goals": ["weight_loss", "maintenance"],
+      "timeOfDay": ["when_stressed", "anytime"],
+      "primaryBenefit": "Transforms emotional eating triggers at their root",
+      "instructions": [
+        "When you notice a strong emotion arising (especially before eating)",
+        "Don't suppress or express it—look directly at the emotion itself",
+        "Where is it in your body? What is its texture, temperature, movement?",
+        "Recognize that the emotion is energy, not a solid thing requiring action",
+        "Rest in this recognition until the energy naturally dissolves"
+      ],
+      "physiologicalEffects": "Interrupts stress-eating circuit, regulates limbic system, improves emotional regulation"
+    },
+    {
+      "id": "sleep_preparation",
+      "name": "Dream Yoga Foundation",
+      "tradition": "Tibetan Dream Yoga",
+      "duration": 10,
+      "difficulty": "beginner",
+      "goals": ["muscle_gain", "weight_loss", "maintenance"],
+      "timeOfDay": ["before_sleep"],
+      "primaryBenefit": "Optimizes sleep quality for recovery and hormone regulation",
+      "instructions": [
+        "Lie in bed in your sleeping position",
+        "Visualize a soft light at your throat center",
+        "With each breath, let tension dissolve from head to toe",
+        "Hold the intention: 'I will recognize the dream-like nature of experience'",
+        "Let go of all effort and drift into sleep naturally"
+      ],
+      "physiologicalEffects": "Enhances slow-wave sleep, optimizes growth hormone release, improves sleep architecture"
+    },
+    {
+      "id": "craving_dissolution",
+      "name": "Urge Surfing Practice",
+      "tradition": "Adapted from Dzogchen",
+      "duration": 5,
+      "difficulty": "intermediate",
+      "goals": ["weight_loss"],
+      "timeOfDay": ["when_craving", "anytime"],
+      "primaryBenefit": "Breaks automatic craving-to-eating response",
+      "instructions": [
+        "When a craving arises, stop and sit immediately",
+        "Don't fight the craving or give in—observe it as a wave",
+        "Notice where you feel it in your body (stomach, mouth, chest?)",
+        "Watch it peak and notice it naturally subsiding",
+        "Recognize: cravings always pass, even without action"
+      ],
+      "physiologicalEffects": "Strengthens prefrontal inhibitory control, reduces dopaminergic craving intensity, improves impulse regulation"
+    },
+    {
+      "id": "morning_sun_practice",
+      "name": "Solar Energy Integration",
+      "tradition": "Tibetan Yoga",
+      "duration": 5,
+      "difficulty": "beginner",
+      "goals": ["muscle_gain", "weight_loss", "maintenance"],
+      "timeOfDay": ["morning"],
+      "primaryBenefit": "Regulates circadian rhythm and optimizes metabolism",
+      "instructions": [
+        "Go outside within 30 minutes of waking",
+        "Face the sun (eyes open but not staring directly at it)",
+        "Stand or sit naturally, breathing normally",
+        "Feel sunlight on your face and body",
+        "Rest in the experience of warmth and light for 5 minutes"
+      ],
+      "physiologicalEffects": "Optimizes cortisol awakening response, suppresses ghrelin, entrains circadian rhythm, increases vitamin D"
+    },
+    {
+      "id": "post_meal_settling",
+      "name": "Digestive Rest Awareness",
+      "tradition": "Dzogchen/Applied",
+      "duration": 10,
+      "difficulty": "beginner",
+      "goals": ["weight_loss", "maintenance"],
+      "timeOfDay": ["post_meal"],
+      "primaryBenefit": "Improves digestion and satiety recognition",
+      "instructions": [
+        "After eating, sit quietly for 10 minutes before moving",
+        "Place attention gently on your belly area",
+        "Notice sensations of fullness, warmth, movement",
+        "Don't judge the sensations—simply be present with digestion",
+        "This helps recognize true satiety versus habit-driven continued eating"
+      ],
+      "physiologicalEffects": "Enhances vagal tone, improves nutrient absorption, allows leptin signals to reach brain"
+    }
+  ]
+}
