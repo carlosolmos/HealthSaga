@@ -1029,7 +1029,7 @@ const HealthSaga = () => {
                   <label style={{ display: 'block', fontSize: '14px', color: '#7a7a7a', marginBottom: '8px' }}>
                     Blood Pressure
                   </label>
-                  <div style={{ display: 'flex', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <input
                       type="number"
                       placeholder="Systolic"
@@ -1039,7 +1039,7 @@ const HealthSaga = () => {
                         bloodPressure: { ...prev.bloodPressure, systolic: e.target.value }
                       }))}
                       style={{
-                        flex: 1,
+                        width: '100%',
                         padding: '12px',
                         border: '2px solid #e0ddd8',
                         borderRadius: '12px',
@@ -1056,7 +1056,7 @@ const HealthSaga = () => {
                         bloodPressure: { ...prev.bloodPressure, diastolic: e.target.value }
                       }))}
                       style={{
-                        flex: 1,
+                        width: '100%',
                         padding: '12px',
                         border: '2px solid #e0ddd8',
                         borderRadius: '12px',
