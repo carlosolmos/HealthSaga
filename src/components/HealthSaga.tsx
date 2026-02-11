@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown } from 'lucide-react';
+import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown, Info } from 'lucide-react';
 import meditationExercisesData from '../data/meditation_exercises.json';
+import { proteinPortions, fiberGuide, weeklyRotation, sugarGuide, hydrationGuide } from '../data/nutrition_guide';
 
 type MeditationExercise = {
   id: string;
@@ -171,12 +172,14 @@ const HealthSaga = () => {
   ]);
 
   const [showRecipes, setShowRecipes] = useState(false);
+  const [expandedMealsSection, setExpandedMealsSection] = useState<string | null>(null);
+  const [showHydrationTips, setShowHydrationTips] = useState(false);
 
   const [expandedFoodCategory, setExpandedFoodCategory] = useState<string | null>(null);
 
   const foodLists = {
     protein: {
-      plant: ['Beans (all types)', 'Lentils', 'Chickpeas', 'Split peas', 'Quinoa', 'Hemp hearts', 'Organic sprouted tofu', 'Organic tempeh', 'Organic natto'],
+      plant: ['Beans (all types)', 'Lentils', 'Chickpeas', 'Split peas', 'Quinoa', 'Hemp hearts', 'Chia seeds', 'Pumpkin seeds', 'Walnuts', 'Organic sprouted tofu', 'Organic tempeh', 'Organic natto'],
       animal: ['Fish (low mercury)', 'Sardines', 'Anchovies', 'Shrimp', 'Chicken (pasture-raised)', 'Turkey', 'Duck', 'Beef (100% grass-fed)', 'Lamb (pasture-raised)', 'Pork (pasture-raised)', 'Buffalo', 'Game meat', 'Organ meat', 'Eggs (pasture-raised)'],
       avoid: ['Canned baked beans', 'Processed deli meats', 'Factory-farmed meat']
     },
@@ -190,7 +193,7 @@ const HealthSaga = () => {
       limit: ['Pasta (2 days/week or less)', 'Bread (2 days/week or less)']
     },
     fats: {
-      approved: ['Avocado', 'Avocado oil', 'Olives', 'Olive oil', 'Nuts', 'Seeds']
+      approved: ['Avocado', 'Avocado oil', 'Olives', 'Olive oil', 'Coconut oil', 'Nut butter', 'Nuts', 'Seeds']
     }
   };
 
@@ -567,11 +570,69 @@ const HealthSaga = () => {
                 <Plus size={18} />
                 Add 8 oz
               </button>
+
+              {/* Hydration Tips Toggle */}
+              <button
+                onClick={() => setShowHydrationTips(!showHydrationTips)}
+                style={{
+                  width: '100%', marginTop: '12px', padding: '10px',
+                  border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: '6px'
+                }}
+              >
+                <span style={{ fontSize: '13px', color: '#5492a3', fontWeight: '500' }}>
+                  Hydration Schedule & Tips
+                </span>
+                <ChevronDown size={16} color="#5492a3" style={{
+                  transform: showHydrationTips ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }} />
+              </button>
+
+              {showHydrationTips && (
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ padding: '8px 12px', background: '#e4eff3', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#3d7a8a', fontStyle: 'italic' }}>
+                      {hydrationGuide.dailyNeeds}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>Best Hydration Times</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {hydrationGuide.timingSchedule.map((entry, idx) => (
+                        <div key={idx} style={{
+                          display: 'flex', gap: '12px', padding: '8px 12px',
+                          background: idx % 2 === 0 ? '#f5f3f0' : 'white',
+                          borderRadius: '8px'
+                        }}>
+                          <span style={{ fontSize: '12px', color: '#5492a3', fontWeight: '500', minWidth: '90px' }}>
+                            {entry.time}
+                          </span>
+                          <span style={{ fontSize: '12px', color: '#4a5550' }}>
+                            {entry.instruction}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>How to Hydrate</div>
+                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#4a5550', fontSize: '12px', lineHeight: 1.7 }}>
+                      {hydrationGuide.rules.map((rule, idx) => (
+                        <li key={idx}>{rule}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div style={{ 
-              background: 'white', 
-              borderRadius: '16px', 
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
               padding: '20px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}>
@@ -678,15 +739,577 @@ const HealthSaga = () => {
 
         {activeTab === 'meals' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            
-            {/* Recipe Suggestions */}
-            <div style={{ 
-              background: 'white', 
-              borderRadius: '16px', 
+
+            {/* Plate Proportions + Daily Goals */}
+            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+              <div style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                flex: 1,
+                minWidth: '280px'
+              }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                  Plate Proportions
+                </h3>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <svg
+                    width="160"
+                    height="120"
+                    viewBox="0 0 160 120"
+                    role="img"
+                    aria-label="Plate proportions: half veggies, quarter protein, quarter starch"
+                  >
+                    <rect x="2" y="2" width="156" height="116" rx="14" fill="#ffffff" stroke="#e0ddd8" strokeWidth="4" />
+                    <rect x="6" y="6" width="74" height="108" rx="10" fill="#3c9d6b" />
+                    <rect x="82" y="6" width="72" height="52" rx="10" fill="#e07a5f" />
+                    <rect x="82" y="62" width="72" height="52" rx="10" fill="#3d7a8a" />
+                  </svg>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '12px', height: '12px', background: '#3c9d6b', borderRadius: '50%' }} />
+                      <span style={{ fontSize: '13px', color: '#7a7a7a' }}>½ Veggies</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '12px', height: '12px', background: '#e07a5f', borderRadius: '50%' }} />
+                      <span style={{ fontSize: '13px', color: '#7a7a7a' }}>¼ Protein</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '12px', height: '12px', background: '#3d7a8a', borderRadius: '50%' }} />
+                      <span style={{ fontSize: '13px', color: '#7a7a7a' }}>¼ Starch</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                flex: 1,
+                minWidth: '280px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <Utensils size={18} color="#a89d7f" />
+                  <h3 style={{ margin: 0, fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>
+                    Daily Goals
+                  </h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px' }}>Protein</div>
+                    <div style={{ fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>100g / day</div>
+                  </div>
+                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px' }}>Fiber</div>
+                    <div style={{ fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>30g / day</div>
+                  </div>
+                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px' }}>Sugar Limit</div>
+                    <div style={{ fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>36g / day</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Approved Foods Guide */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
               padding: '20px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <button
+                onClick={() => setExpandedMealsSection(expandedMealsSection === 'foods' ? null : 'foods')}
+                style={{
+                  width: '100%', padding: '0', border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Utensils size={20} color="#a89d7f" />
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                    Approved Foods Guide
+                  </h3>
+                </div>
+                <ChevronDown size={18} color="#7a7a7a" style={{
+                  transform: expandedMealsSection === 'foods' ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }} />
+              </button>
+              {expandedMealsSection === 'foods' && (
+                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* Protein */}
+                  <div>
+                    <button
+                      onClick={() => toggleFoodCategory('protein')}
+                      style={{
+                        width: '100%', padding: '12px', border: '2px solid #e0ddd8', borderRadius: '12px',
+                        background: expandedFoodCategory === 'protein' ? '#f5f3f0' : 'white',
+                        cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>Protein Sources</span>
+                      <ChevronDown size={18} color="#7a7a7a" style={{
+                        transform: expandedFoodCategory === 'protein' ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.3s ease'
+                      }} />
+                    </button>
+                    {expandedFoodCategory === 'protein' && (
+                      <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
+                        <div style={{ marginBottom: '12px' }}>
+                          <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Plant Protein</div>
+                          <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
+                            {foodLists.protein.plant.join(' • ')}
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: '12px' }}>
+                          <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Animal Protein</div>
+                          <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
+                            {foodLists.protein.animal.join(' • ')}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13px', color: '#a86d5f', fontWeight: '500', marginBottom: '6px' }}>Avoid</div>
+                          <div style={{ fontSize: '13px', color: '#7a7a7a', lineHeight: '1.6' }}>
+                            {foodLists.protein.avoid.join(' • ')}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Veggies */}
+                  <div>
+                    <button
+                      onClick={() => toggleFoodCategory('veggies')}
+                      style={{
+                        width: '100%', padding: '12px', border: '2px solid #e0ddd8', borderRadius: '12px',
+                        background: expandedFoodCategory === 'veggies' ? '#f5f3f0' : 'white',
+                        cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>Non-Starch Vegetables</span>
+                      <ChevronDown size={18} color="#7a7a7a" style={{
+                        transform: expandedFoodCategory === 'veggies' ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.3s ease'
+                      }} />
+                    </button>
+                    {expandedFoodCategory === 'veggies' && (
+                      <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
+                        <div style={{ padding: '8px 12px', background: '#e4eff3', borderRadius: '8px', marginBottom: '12px' }}>
+                          <div style={{ fontSize: '12px', color: '#3d7a8a', fontStyle: 'italic' }}>
+                            {foodLists.veggies.note}
+                          </div>
+                        </div>
+                        <div style={{ marginBottom: '12px' }}>
+                          <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Try These More Often</div>
+                          <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
+                            {foodLists.veggies.preferred.join(' • ')}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Good Accessory Veggies</div>
+                          <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
+                            {foodLists.veggies.accessory.join(' • ')}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Starches */}
+                  <div>
+                    <button
+                      onClick={() => toggleFoodCategory('starch')}
+                      style={{
+                        width: '100%', padding: '12px', border: '2px solid #e0ddd8', borderRadius: '12px',
+                        background: expandedFoodCategory === 'starch' ? '#f5f3f0' : 'white',
+                        cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>Healthy Starches & Grains</span>
+                      <ChevronDown size={18} color="#7a7a7a" style={{
+                        transform: expandedFoodCategory === 'starch' ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.3s ease'
+                      }} />
+                    </button>
+                    {expandedFoodCategory === 'starch' && (
+                      <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
+                        <div style={{ marginBottom: '12px' }}>
+                          <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Approved Starches</div>
+                          <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
+                            {foodLists.starch.approved.join(' • ')}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '13px', color: '#a89d7f', fontWeight: '500', marginBottom: '6px' }}>Limit These</div>
+                          <div style={{ fontSize: '13px', color: '#7a7a7a', lineHeight: '1.6' }}>
+                            {foodLists.starch.limit.join(' • ')}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Healthy Fats */}
+                  <div>
+                    <button
+                      onClick={() => toggleFoodCategory('fats')}
+                      style={{
+                        width: '100%', padding: '12px', border: '2px solid #e0ddd8', borderRadius: '12px',
+                        background: expandedFoodCategory === 'fats' ? '#f5f3f0' : 'white',
+                        cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>Healthy Fats</span>
+                      <ChevronDown size={18} color="#7a7a7a" style={{
+                        transform: expandedFoodCategory === 'fats' ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.3s ease'
+                      }} />
+                    </button>
+                    {expandedFoodCategory === 'fats' && (
+                      <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
+                        <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
+                          {foodLists.fats.approved.join(' • ')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Protein Reference */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <button
+                onClick={() => setExpandedMealsSection(expandedMealsSection === 'protein' ? null : 'protein')}
+                style={{
+                  width: '100%', padding: '0', border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <TrendingUp size={20} color="#a89d7f" />
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                    Protein Reference
+                  </h3>
+                </div>
+                <ChevronDown size={18} color="#7a7a7a" style={{
+                  transform: expandedMealsSection === 'protein' ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }} />
+              </button>
+              {expandedMealsSection === 'protein' && (
+                <div style={{ marginTop: '16px' }}>
+                  <div style={{ padding: '10px 12px', background: '#e4eff3', borderRadius: '8px', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '600' }}>Goal: {proteinPortions.goal}</div>
+                    <div style={{ fontSize: '12px', color: '#3d7a8a', marginTop: '4px' }}>
+                      {proteinPortions.calculation}
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>Animal Protein</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', padding: '8px 12px', background: '#e4eff3', borderRadius: '8px 8px 0 0' }}>
+                      <span style={{ flex: 2, fontSize: '12px', color: '#3d7a8a', fontWeight: '600' }}>Food</span>
+                      <span style={{ flex: 1, fontSize: '12px', color: '#3d7a8a', fontWeight: '600', textAlign: 'center' }}>Amount</span>
+                      <span style={{ flex: 1, fontSize: '12px', color: '#3d7a8a', fontWeight: '600', textAlign: 'right' }}>Protein</span>
+                    </div>
+                    {proteinPortions.animal.map((item, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex', padding: '8px 12px',
+                        background: idx % 2 === 0 ? '#f5f3f0' : 'white',
+                        borderRadius: idx === proteinPortions.animal.length - 1 ? '0 0 8px 8px' : '0'
+                      }}>
+                        <span style={{ flex: 2, fontSize: '13px', color: '#4a5550' }}>{item.food}</span>
+                        <span style={{ flex: 1, fontSize: '13px', color: '#7a7a7a', textAlign: 'center' }}>{item.amount}</span>
+                        <span style={{ flex: 1, fontSize: '13px', color: '#5492a3', fontWeight: '500', textAlign: 'right' }}>{item.protein}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>Plant Protein</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ display: 'flex', padding: '8px 12px', background: '#e4eff3', borderRadius: '8px 8px 0 0' }}>
+                      <span style={{ flex: 2, fontSize: '12px', color: '#3d7a8a', fontWeight: '600' }}>Food</span>
+                      <span style={{ flex: 1, fontSize: '12px', color: '#3d7a8a', fontWeight: '600', textAlign: 'center' }}>Amount</span>
+                      <span style={{ flex: 1, fontSize: '12px', color: '#3d7a8a', fontWeight: '600', textAlign: 'right' }}>Protein</span>
+                    </div>
+                    {proteinPortions.plant.map((item, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex', padding: '8px 12px',
+                        background: idx % 2 === 0 ? '#f5f3f0' : 'white',
+                        borderRadius: idx === proteinPortions.plant.length - 1 ? '0 0 8px 8px' : '0'
+                      }}>
+                        <span style={{ flex: 2, fontSize: '13px', color: '#4a5550' }}>{item.food}</span>
+                        <span style={{ flex: 1, fontSize: '13px', color: '#7a7a7a', textAlign: 'center' }}>{item.amount}</span>
+                        <span style={{ flex: 1, fontSize: '13px', color: '#5492a3', fontWeight: '500', textAlign: 'right' }}>{item.protein}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Fiber Guide */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <button
+                onClick={() => setExpandedMealsSection(expandedMealsSection === 'fiber' ? null : 'fiber')}
+                style={{
+                  width: '100%', padding: '0', border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Activity size={20} color="#a89d7f" />
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                    Fiber Guide
+                  </h3>
+                </div>
+                <ChevronDown size={18} color="#7a7a7a" style={{
+                  transform: expandedMealsSection === 'fiber' ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }} />
+              </button>
+              {expandedMealsSection === 'fiber' && (
+                <div style={{ marginTop: '16px' }}>
+                  <div style={{ padding: '10px 12px', background: '#e4eff3', borderRadius: '8px', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '600' }}>Goal: {fiberGuide.goal}</div>
+                  </div>
+
+                  <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>Top Fiber Foods</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', padding: '8px 12px', background: '#e4eff3', borderRadius: '8px 8px 0 0' }}>
+                      <span style={{ flex: 2, fontSize: '12px', color: '#3d7a8a', fontWeight: '600' }}>Food</span>
+                      <span style={{ flex: 1, fontSize: '12px', color: '#3d7a8a', fontWeight: '600', textAlign: 'center' }}>Amount</span>
+                      <span style={{ flex: 1, fontSize: '12px', color: '#3d7a8a', fontWeight: '600', textAlign: 'right' }}>Fiber</span>
+                    </div>
+                    {fiberGuide.topFoods.map((item, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex', padding: '8px 12px',
+                        background: idx % 2 === 0 ? '#f5f3f0' : 'white',
+                        borderRadius: idx === fiberGuide.topFoods.length - 1 ? '0 0 8px 8px' : '0'
+                      }}>
+                        <span style={{ flex: 2, fontSize: '13px', color: '#4a5550' }}>{item.food}</span>
+                        <span style={{ flex: 1, fontSize: '13px', color: '#7a7a7a', textAlign: 'center' }}>{item.amount}</span>
+                        <span style={{ flex: 1, fontSize: '13px', color: '#5492a3', fontWeight: '500', textAlign: 'right' }}>{item.fiber}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>How to Increase Gradually</div>
+                  <ol style={{ margin: '0 0 16px 0', paddingLeft: '18px', color: '#4a5550', fontSize: '13px', lineHeight: 1.7 }}>
+                    {fiberGuide.gradualIncrease.map((step, idx) => (
+                      <li key={idx}>{step}</li>
+                    ))}
+                  </ol>
+
+                  <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>Why Gut Health Matters</div>
+                  <div style={{ padding: '12px', background: '#f8f7f4', borderRadius: '10px' }}>
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '8px' }}>
+                      You need a healthy gut microbiome for:
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {fiberGuide.gutHealthBenefits.map(benefit => (
+                        <span key={benefit} style={{
+                          padding: '4px 10px', borderRadius: '999px',
+                          background: '#e8f5e9', color: '#2e7d32',
+                          fontSize: '12px', fontWeight: '500'
+                        }}>
+                          {benefit}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Weekly Rotation */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <button
+                onClick={() => setExpandedMealsSection(expandedMealsSection === 'rotation' ? null : 'rotation')}
+                style={{
+                  width: '100%', padding: '0', border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Info size={20} color="#a89d7f" />
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                    Weekly Rotation
+                  </h3>
+                </div>
+                <ChevronDown size={18} color="#7a7a7a" style={{
+                  transform: expandedMealsSection === 'rotation' ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }} />
+              </button>
+              {expandedMealsSection === 'rotation' && (
+                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {/* Protein Rotation */}
+                  <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500', marginBottom: '8px' }}>Protein Variety</div>
+                    <div style={{ padding: '8px 12px', background: '#e4eff3', borderRadius: '8px', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '12px', color: '#3d7a8a', fontStyle: 'italic' }}>
+                        {weeklyRotation.protein.dailyTip}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '6px' }}>Animal protein for the week:</div>
+                    <ul style={{ margin: '0 0 10px 0', paddingLeft: '18px', color: '#4a5550', fontSize: '13px', lineHeight: 1.7 }}>
+                      {weeklyRotation.protein.weeklyDistribution.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '6px' }}>Plant protein for the week:</div>
+                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#4a5550', fontSize: '13px', lineHeight: 1.7 }}>
+                      {weeklyRotation.protein.plantWeekly.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Starch Rotation */}
+                  <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500', marginBottom: '8px' }}>Starch Variety</div>
+                    <div style={{ padding: '8px 12px', background: '#e4eff3', borderRadius: '8px', marginBottom: '12px' }}>
+                      <div style={{ fontSize: '12px', color: '#3d7a8a', fontStyle: 'italic' }}>
+                        {weeklyRotation.starch.dailyTip}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '6px' }}>Healthy starch distribution:</div>
+                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#4a5550', fontSize: '13px', lineHeight: 1.7 }}>
+                      {weeklyRotation.starch.weeklyDistribution.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sugar Guide */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <button
+                onClick={() => setExpandedMealsSection(expandedMealsSection === 'sugar' ? null : 'sugar')}
+                style={{
+                  width: '100%', padding: '0', border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Info size={20} color="#a89d7f" />
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                    Sugar Guide
+                  </h3>
+                </div>
+                <ChevronDown size={18} color="#7a7a7a" style={{
+                  transform: expandedMealsSection === 'sugar' ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }} />
+              </button>
+              {expandedMealsSection === 'sugar' && (
+                <div style={{ marginTop: '16px' }}>
+                  <div style={{ padding: '10px 12px', background: '#e4eff3', borderRadius: '8px', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '600' }}>
+                      Daily limit: {sugarGuide.dailyLimit}
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>How to Calculate</div>
+                  <ul style={{ margin: '0 0 16px 0', paddingLeft: '18px', color: '#4a5550', fontSize: '13px', lineHeight: 1.7 }}>
+                    {sugarGuide.howToCalculate.map((tip, idx) => (
+                      <li key={idx}>{tip}</li>
+                    ))}
+                  </ul>
+
+                  <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>Healthier Sugars</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
+                    {sugarGuide.healthierSugars.map(item => (
+                      <span key={item} style={{
+                        padding: '4px 10px', borderRadius: '999px',
+                        background: '#e8f5e9', color: '#2e7d32',
+                        fontSize: '12px', fontWeight: '500'
+                      }}>
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>Sugars to Avoid</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
+                    {sugarGuide.sugarsToAvoid.map(item => (
+                      <span key={item} style={{
+                        padding: '4px 10px', borderRadius: '999px',
+                        background: '#fce4ec', color: '#a86d5f',
+                        fontSize: '12px', fontWeight: '500'
+                      }}>
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '8px' }}>Liquid Sugars to Avoid</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', padding: '8px 12px', background: '#fce4ec', borderRadius: '8px 8px 0 0' }}>
+                      <span style={{ flex: 2, fontSize: '12px', color: '#a86d5f', fontWeight: '600' }}>Drink</span>
+                      <span style={{ flex: 1, fontSize: '12px', color: '#a86d5f', fontWeight: '600', textAlign: 'right' }}>Sugar</span>
+                    </div>
+                    {sugarGuide.liquidSugarsToAvoid.map((item, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex', padding: '8px 12px',
+                        background: idx % 2 === 0 ? '#f5f3f0' : 'white',
+                        borderRadius: idx === sugarGuide.liquidSugarsToAvoid.length - 1 ? '0 0 8px 8px' : '0'
+                      }}>
+                        <span style={{ flex: 2, fontSize: '13px', color: '#4a5550' }}>{item.drink}</span>
+                        <span style={{ flex: 1, fontSize: '13px', color: '#a86d5f', fontWeight: '500', textAlign: 'right' }}>{item.sugar}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ padding: '8px 12px', background: '#e4eff3', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '12px', color: '#3d7a8a', fontStyle: 'italic' }}>
+                      {sugarGuide.liquidTip}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Recipe Ideas */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: showRecipes ? '16px' : '0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <Utensils size={20} color="#a89d7f" />
                   <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
@@ -712,195 +1335,6 @@ const HealthSaga = () => {
 
               {showRecipes && (
                 <div>
-                  {/* Approved Foods Guide */}
-                  <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid #f0f0f0' }}>
-                    <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#7a7a7a', fontWeight: '500' }}>
-                      Approved Foods Guide
-                    </h4>
-
-                    {/* Protein */}
-                    <div style={{ marginBottom: '8px' }}>
-                      <button
-                        onClick={() => toggleFoodCategory('protein')}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e0ddd8',
-                          borderRadius: '12px',
-                          background: expandedFoodCategory === 'protein' ? '#f5f3f0' : 'white',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>Protein Sources</span>
-                        <ChevronDown 
-                          size={18} 
-                          color="#7a7a7a" 
-                          style={{ 
-                            transform: expandedFoodCategory === 'protein' ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.3s ease'
-                          }} 
-                        />
-                      </button>
-                      {expandedFoodCategory === 'protein' && (
-                        <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
-                          <div style={{ marginBottom: '12px' }}>
-                            <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Plant Protein</div>
-                            <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
-                              {foodLists.protein.plant.join(' • ')}
-                            </div>
-                          </div>
-                          <div style={{ marginBottom: '12px' }}>
-                            <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Animal Protein</div>
-                            <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
-                              {foodLists.protein.animal.join(' • ')}
-                            </div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '13px', color: '#a86d5f', fontWeight: '500', marginBottom: '6px' }}>Avoid</div>
-                            <div style={{ fontSize: '13px', color: '#7a7a7a', lineHeight: '1.6' }}>
-                              {foodLists.protein.avoid.join(' • ')}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Veggies */}
-                    <div style={{ marginBottom: '8px' }}>
-                      <button
-                        onClick={() => toggleFoodCategory('veggies')}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e0ddd8',
-                          borderRadius: '12px',
-                          background: expandedFoodCategory === 'veggies' ? '#f5f3f0' : 'white',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>Non-Starch Vegetables</span>
-                        <ChevronDown 
-                          size={18} 
-                          color="#7a7a7a" 
-                          style={{ 
-                            transform: expandedFoodCategory === 'veggies' ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.3s ease'
-                          }} 
-                        />
-                      </button>
-                      {expandedFoodCategory === 'veggies' && (
-                        <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
-                          <div style={{ padding: '8px 12px', background: '#e4eff3', borderRadius: '8px', marginBottom: '12px' }}>
-                            <div style={{ fontSize: '12px', color: '#3d7a8a', fontStyle: 'italic' }}>
-                              {foodLists.veggies.note}
-                            </div>
-                          </div>
-                          <div style={{ marginBottom: '12px' }}>
-                            <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Try These More Often</div>
-                            <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
-                              {foodLists.veggies.preferred.join(' • ')}
-                            </div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Good Accessory Veggies</div>
-                            <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
-                              {foodLists.veggies.accessory.join(' • ')}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Starches */}
-                    <div style={{ marginBottom: '8px' }}>
-                      <button
-                        onClick={() => toggleFoodCategory('starch')}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e0ddd8',
-                          borderRadius: '12px',
-                          background: expandedFoodCategory === 'starch' ? '#f5f3f0' : 'white',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>Healthy Starches & Grains</span>
-                        <ChevronDown 
-                          size={18} 
-                          color="#7a7a7a" 
-                          style={{ 
-                            transform: expandedFoodCategory === 'starch' ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.3s ease'
-                          }} 
-                        />
-                      </button>
-                      {expandedFoodCategory === 'starch' && (
-                        <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
-                          <div style={{ marginBottom: '12px' }}>
-                            <div style={{ fontSize: '13px', color: '#3d7a8a', fontWeight: '500', marginBottom: '6px' }}>Approved Starches</div>
-                            <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
-                              {foodLists.starch.approved.join(' • ')}
-                            </div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: '13px', color: '#a89d7f', fontWeight: '500', marginBottom: '6px' }}>Limit These</div>
-                            <div style={{ fontSize: '13px', color: '#7a7a7a', lineHeight: '1.6' }}>
-                              {foodLists.starch.limit.join(' • ')}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Healthy Fats */}
-                    <div style={{ marginBottom: '8px' }}>
-                      <button
-                        onClick={() => toggleFoodCategory('fats')}
-                        style={{
-                          width: '100%',
-                          padding: '12px',
-                          border: '2px solid #e0ddd8',
-                          borderRadius: '12px',
-                          background: expandedFoodCategory === 'fats' ? '#f5f3f0' : 'white',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>Healthy Fats</span>
-                        <ChevronDown 
-                          size={18} 
-                          color="#7a7a7a" 
-                          style={{ 
-                            transform: expandedFoodCategory === 'fats' ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.3s ease'
-                          }} 
-                        />
-                      </button>
-                      {expandedFoodCategory === 'fats' && (
-                        <div style={{ padding: '16px', background: '#f5f3f0', borderRadius: '0 0 12px 12px', marginTop: '-8px' }}>
-                          <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: '1.6' }}>
-                            {foodLists.fats.approved.join(' • ')}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   <div style={{ marginBottom: '20px' }}>
                     <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#7a7a7a', fontWeight: '500' }}>
                       Breakfast Ideas
@@ -968,9 +1402,10 @@ const HealthSaga = () => {
               )}
             </div>
 
-            <div style={{ 
-              background: 'white', 
-              borderRadius: '16px', 
+            {/* Meal Timing */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
               padding: '20px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}>
@@ -989,79 +1424,6 @@ const HealthSaga = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0' }}>
                   <span style={{ fontSize: '14px', color: '#4a5550' }}>Dinner</span>
                   <span style={{ fontSize: '14px', color: '#7a7a7a' }}>5 - 7pm</span>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
-              <div style={{ 
-                background: 'white', 
-                borderRadius: '16px', 
-                padding: '20px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                flex: 1,
-                minWidth: '280px'
-              }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
-                  Plate Proportions
-                </h3>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <svg
-                    width="160"
-                    height="120"
-                    viewBox="0 0 160 120"
-                    role="img"
-                    aria-label="Plate proportions: half veggies, quarter protein, quarter starch"
-                  >
-                    <rect x="2" y="2" width="156" height="116" rx="14" fill="#ffffff" stroke="#e0ddd8" strokeWidth="4" />
-                    <rect x="6" y="6" width="74" height="108" rx="10" fill="#3c9d6b" />
-                    <rect x="82" y="6" width="72" height="52" rx="10" fill="#e07a5f" />
-                    <rect x="82" y="62" width="72" height="52" rx="10" fill="#3d7a8a" />
-                  </svg>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ width: '12px', height: '12px', background: '#3c9d6b', borderRadius: '50%' }} />
-                      <span style={{ fontSize: '13px', color: '#7a7a7a' }}>½ Veggies</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ width: '12px', height: '12px', background: '#e07a5f', borderRadius: '50%' }} />
-                      <span style={{ fontSize: '13px', color: '#7a7a7a' }}>¼ Protein</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ width: '12px', height: '12px', background: '#3d7a8a', borderRadius: '50%' }} />
-                      <span style={{ fontSize: '13px', color: '#7a7a7a' }}>¼ Starch</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ 
-                background: 'white', 
-                borderRadius: '16px', 
-                padding: '20px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                flex: 1,
-                minWidth: '280px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                  <Utensils size={18} color="#a89d7f" />
-                  <h3 style={{ margin: 0, fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>
-                    Daily Goals
-                  </h3>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
-                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px' }}>Protein</div>
-                    <div style={{ fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>100g / day</div>
-                  </div>
-                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
-                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px' }}>Fiber</div>
-                    <div style={{ fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>30g / day</div>
-                  </div>
-                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
-                    <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px' }}>Sugar Limit</div>
-                    <div style={{ fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>36g / day</div>
-                  </div>
                 </div>
               </div>
             </div>
