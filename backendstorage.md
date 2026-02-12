@@ -19,17 +19,37 @@ Steps
 6. Update Docker build to serve both static assets and API (single container):
    - Node API listens on a port (e.g., 8080) and serves the built dist/.
    - Update Traefik labels to route to the API port.
-7. Add environment variables and data volume for SQLite (e.g., /data/healthsaga.db) and document this in README.md.
+7. Configure SQLite database storage for Docker deployment:
+   - Use a Docker volume to persist data outside the container.
+   - API code should read DB_PATH env var (default: /data/healthsaga/healthsaga.db).
+   - In docker-compose.yml, mount a host path (e.g., /var/lib/healthsaga/data) to /data/healthsaga inside the container.
+   - This keeps the database file on the host filesystem, making backups simple (just copy the directory).
+   - Enable WAL mode in SQLite for better concurrency and crash recovery.
+   - Document the volume mount and backup procedure in README.md.
 
 Verification
 - Run API locally and ensure GET /api/snapshot returns empty then updated JSON after POST.
 - Build and run Docker image; verify both the UI and API are reachable.
 - Confirm metrics history appends new rows and that daily data loads correctly after refresh.
+- Verify that stopping and restarting the container preserves database data (check the mounted volume on host).
+
+Docker Production Setup
+- On the production server, create a data directory: `mkdir -p /opt/healthsaga/data`.
+- docker-compose.yml volumes section should mount:
+  ```yaml
+  volumes:
+    - /opt/healthsaga/data:/data/healthsaga
+  ```
+- Backup procedure: `tar -czf ~/backups/healthsaga-$(date +%Y%m%d).tar.gz /opt/healthsaga/data/`.
+- For scheduled backups, add to crontab (e.g., daily at 2 AM).
+- The database file (healthsaga.db) and WAL files (-wal, -shm) will all be in the mounted host directory for easy backup and inspection.
 
 Decisions
 - Single-user, no auth.
 - Store metrics history.
 - Snapshot-based sync (overwrite latest).
 - Single container for API + static UI.
+- Database persisted via Docker volume mount to host filesystem for easy backups.
+- SQLite WAL mode for improved reliability in containerized environment.
 
 If you want a different data folder path or port for the API, tell me and I will incorporate it.

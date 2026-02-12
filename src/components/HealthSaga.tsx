@@ -20,9 +20,10 @@ type MindfulnessSlot = 'morning' | 'evening';
 
 type MetricsEntry = {
   recordedAt: string;
-  bloodPressure: { systolic: string; diastolic: string };
-  heartRate: string;
-  weight: string;
+  bloodPressure?: { systolic?: string; diastolic?: string };
+  heartRate?: string;
+  weight?: string;
+  respiratoryRate?: string;
 };
 
 function useLocalStorage<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
@@ -134,7 +135,8 @@ const HealthSaga = () => {
   const [metrics, setMetrics] = useLocalStorage('healthsaga-metrics', {
     bloodPressure: { systolic: '', diastolic: '' },
     heartRate: '',
-    weight: ''
+    weight: '',
+    respiratoryRate: ''
   });
 
   const [metricsHistory, setMetricsHistory] = useLocalStorage<MetricsEntry[]>('healthsaga-metrics-history', []);
@@ -143,17 +145,19 @@ const HealthSaga = () => {
     const entry: MetricsEntry = {
       recordedAt: new Date().toISOString(),
       bloodPressure: {
-        systolic: metrics.bloodPressure.systolic.trim(),
-        diastolic: metrics.bloodPressure.diastolic.trim()
+        systolic: metrics.bloodPressure.systolic.trim() || undefined,
+        diastolic: metrics.bloodPressure.diastolic.trim() || undefined
       },
-      heartRate: metrics.heartRate.trim(),
-      weight: metrics.weight.trim()
+      heartRate: metrics.heartRate.trim() || undefined,
+      weight: metrics.weight.trim() || undefined,
+      respiratoryRate: metrics.respiratoryRate.trim() || undefined
     };
     const hasValues = Boolean(
-      entry.bloodPressure.systolic ||
-      entry.bloodPressure.diastolic ||
+      entry.bloodPressure?.systolic ||
+      entry.bloodPressure?.diastolic ||
       entry.heartRate ||
-      entry.weight
+      entry.weight ||
+      entry.respiratoryRate
     );
     if (hasValues) {
       setMetricsHistory(prev => [entry, ...prev].slice(0, 50));
@@ -1494,7 +1498,6 @@ const HealthSaga = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="72"
                     value={metrics.heartRate}
                     onChange={(e) => setMetrics(prev => ({ ...prev, heartRate: e.target.value }))}
                     style={{
@@ -1514,9 +1517,27 @@ const HealthSaga = () => {
                   </label>
                   <input
                     type="number"
-                    placeholder="150"
                     value={metrics.weight}
                     onChange={(e) => setMetrics(prev => ({ ...prev, weight: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '2px solid #e0ddd8',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', color: '#7a7a7a', marginBottom: '8px' }}>
+                    Respiratory Rate (breaths/min)
+                  </label>
+                  <input
+                    type="number"
+                    value={metrics.respiratoryRate}
+                    onChange={(e) => setMetrics(prev => ({ ...prev, respiratoryRate: e.target.value }))}
                     style={{
                       width: '100%',
                       padding: '12px',
@@ -1593,7 +1614,7 @@ const HealthSaga = () => {
                             })}
                           </div>
                           <div>
-                            BP {entry.bloodPressure.systolic || '--'}/{entry.bloodPressure.diastolic || '--'} • HR {entry.heartRate || '--'} • Wt {entry.weight || '--'}
+                            BP {entry.bloodPressure?.systolic || '--'}/{entry.bloodPressure?.diastolic || '--'} • HR {entry.heartRate || '--'} • Wt {entry.weight || '--'}{entry.respiratoryRate ? ` • RR ${entry.respiratoryRate}` : ''}
                           </div>
                         </div>
                       ))}
