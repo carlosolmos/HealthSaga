@@ -165,7 +165,8 @@ const HealthSaga = () => {
     setMetrics({
       bloodPressure: { systolic: '', diastolic: '' },
       heartRate: '',
-      weight: ''
+      weight: '',
+      respiratoryRate: ''
     });
   };
 
