@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown, Info } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import meditationExercisesData from '../data/meditation_exercises.json';
 import { proteinPortions, fiberGuide, weeklyRotation, sugarGuide, hydrationGuide } from '../data/nutrition_guide';
 
@@ -212,6 +213,7 @@ const HealthSaga = () => {
   ]);
 
   const [trendDateRange, setTrendDateRange] = useState<'week' | 'month' | 'all'>('week');
+  const [trendView, setTrendView] = useState<'summary' | 'charts'>('summary');
 
   const getTrendStats = useCallback((metric: 'systolic' | 'diastolic' | 'heartRate' | 'weight' | 'respiratoryRate') => {
     const now = new Date();
@@ -262,6 +264,24 @@ const HealthSaga = () => {
 
     return { total, avg, trend, daysInRange };
   }, [todayData.meditationCount, trendDateRange]);
+
+  const getChartData = useCallback(() => {
+    const now = new Date();
+    let startDate = new Date();
+    if (trendDateRange === 'week') startDate.setDate(now.getDate() - 7);
+    else if (trendDateRange === 'month') startDate.setDate(now.getDate() - 30);
+    else startDate = new Date(0);
+
+    const filtered = metricsHistory.filter(entry => new Date(entry.recordedAt) >= startDate).reverse();
+    return filtered.map(entry => ({
+      timestamp: new Date(entry.recordedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      systolic: entry.bloodPressure?.systolic ? Number(entry.bloodPressure.systolic) : null,
+      diastolic: entry.bloodPressure?.diastolic ? Number(entry.bloodPressure.diastolic) : null,
+      heartRate: entry.heartRate ? Number(entry.heartRate) : null,
+      respiratoryRate: entry.respiratoryRate ? Number(entry.respiratoryRate) : null,
+      weight: entry.weight ? Number(entry.weight) : null
+    }));
+  }, [metricsHistory, trendDateRange]);
 
   const [showRecipes, setShowRecipes] = useState(false);
   const [expandedMealsSection, setExpandedMealsSection] = useState<string | null>(null);
@@ -1896,8 +1916,30 @@ const HealthSaga = () => {
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}>
               <div style={{ marginBottom: '16px' }}>
-                <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '8px' }}>
-                  Trends
+                <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Trends</span>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {(['summary', 'charts'] as const).map(view => (
+                      <button
+                        key={view}
+                        onClick={() => setTrendView(view)}
+                        style={{
+                          padding: '4px 10px',
+                          border: trendView === view ? 'none' : '1px solid #e0ddd8',
+                          borderRadius: '6px',
+                          background: trendView === view ? '#5492a3' : 'white',
+                          color: trendView === view ? 'white' : '#4a5550',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          transition: 'all 0.2s ease',
+                          textTransform: 'capitalize'
+                        }}
+                      >
+                        {view}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {(['week', 'month', 'all'] as const).map(range => (
@@ -1922,48 +1964,121 @@ const HealthSaga = () => {
                   ))}
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
-                {(() => {
-                  const systolic = getTrendStats('systolic');
-                  const diastolic = getTrendStats('diastolic');
-                  const heartRate = getTrendStats('heartRate');
-                  const respiratoryRate = getTrendStats('respiratoryRate');
-                  const meditation = getMeditationStats();
 
-                  return [
-                    { label: 'Systolic BP', unit: 'mmHg', stats: systolic },
-                    { label: 'Diastolic BP', unit: 'mmHg', stats: diastolic },
-                    { label: 'Heart Rate', unit: 'bpm', stats: heartRate },
-                    { label: 'Respiratory Rate', unit: 'br/min', stats: respiratoryRate },
-                    { label: 'Meditations', unit: 'total', stats: { latest: meditation.total, trend: meditation.trend, count: meditation.daysInRange } }
-                  ].map((card, idx) => (
-                    <div
-                      key={card.label}
-                      style={{
-                        padding: '12px',
-                        borderRadius: '12px',
-                        background: '#f8f7f4',
-                        gridColumn: idx === 4 ? '1 / -1' : 'span 1'
-                      }}
-                    >
-                      <div style={{ fontSize: '11px', color: '#7a7a7a', fontWeight: '500', marginBottom: '6px' }}>
-                        {card.label} {card.unit ? `(${card.unit})` : ''}
+              {trendView === 'summary' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                  {(() => {
+                    const systolic = getTrendStats('systolic');
+                    const diastolic = getTrendStats('diastolic');
+                    const heartRate = getTrendStats('heartRate');
+                    const respiratoryRate = getTrendStats('respiratoryRate');
+                    const meditation = getMeditationStats();
+
+                    return [
+                      { label: 'Systolic BP', unit: 'mmHg', stats: systolic },
+                      { label: 'Diastolic BP', unit: 'mmHg', stats: diastolic },
+                      { label: 'Heart Rate', unit: 'bpm', stats: heartRate },
+                      { label: 'Respiratory Rate', unit: 'br/min', stats: respiratoryRate },
+                      { label: 'Meditations', unit: 'total', stats: { latest: meditation.total, trend: meditation.trend, count: meditation.daysInRange } }
+                    ].map((card, idx) => (
+                      <div
+                        key={card.label}
+                        style={{
+                          padding: '12px',
+                          borderRadius: '12px',
+                          background: '#f8f7f4',
+                          gridColumn: idx === 4 ? '1 / -1' : 'span 1'
+                        }}
+                      >
+                        <div style={{ fontSize: '11px', color: '#7a7a7a', fontWeight: '500', marginBottom: '6px' }}>
+                          {card.label} {card.unit ? `(${card.unit})` : ''}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '18px', fontWeight: '600', color: '#4a5550' }}>
+                            {card.stats.latest}
+                          </span>
+                          <span style={{ fontSize: '14px', color: '#7a7a7a' }}>
+                            {card.stats.trend}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#9b9b9b' }}>
+                          {card.stats.count} {card.stats.count === 1 ? 'reading' : 'readings'}
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '18px', fontWeight: '600', color: '#4a5550' }}>
-                          {card.stats.latest}
-                        </span>
-                        <span style={{ fontSize: '14px', color: '#7a7a7a' }}>
-                          {card.stats.trend}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#9b9b9b' }}>
-                        {card.stats.count} {card.stats.count === 1 ? 'reading' : 'readings'}
-                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+
+              {trendView === 'charts' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '16px' }}>
+                  {getChartData().length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '24px', fontSize: '14px', color: '#9b9b9b' }}>
+                      No data available for this date range.
                     </div>
-                  ));
-                })()}
-              </div>
+                  ) : (
+                    <>
+                      {getTrendStats('systolic').count > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Blood Pressure</div>
+                          <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={getChartData()}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e0ddd8" />
+                              <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} />
+                              <YAxis label={{ value: 'mmHg', angle: -90, position: 'insideLeft' }} />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="systolic" stroke="#d97a5d" name="Systolic" dot={false} />
+                              <Line type="monotone" dataKey="diastolic" stroke="#7da8a0" name="Diastolic" dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                      {getTrendStats('heartRate').count > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Heart Rate</div>
+                          <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={getChartData()}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e0ddd8" />
+                              <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} />
+                              <YAxis label={{ value: 'bpm', angle: -90, position: 'insideLeft' }} />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="heartRate" stroke="#5492a3" name="HR" dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                      {getTrendStats('respiratoryRate').count > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Respiratory Rate</div>
+                          <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={getChartData()}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e0ddd8" />
+                              <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} />
+                              <YAxis label={{ value: 'br/min', angle: -90, position: 'insideLeft' }} />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="respiratoryRate" stroke="#a89d7f" name="RR" dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                      {getTrendStats('weight').count > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Weight</div>
+                          <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={getChartData()}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e0ddd8" />
+                              <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} />
+                              <YAxis label={{ value: 'lbs', angle: -90, position: 'insideLeft' }} />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="weight" stroke="#8b9d83" name="Weight" dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
