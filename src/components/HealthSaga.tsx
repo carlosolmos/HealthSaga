@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown, Info } from 'lucide-react';
 import meditationExercisesData from '../data/meditation_exercises.json';
 import { proteinPortions, fiberGuide, weeklyRotation, sugarGuide, hydrationGuide } from '../data/nutrition_guide';
@@ -24,6 +24,18 @@ type MetricsEntry = {
   heartRate?: string;
   weight?: string;
   respiratoryRate?: string;
+};
+
+type SnapshotPayload = {
+  today?: { date: string; data: typeof defaultTodayData };
+  reminders?: { time: string; label: string; enabled: boolean }[];
+  mindfulness?: { date: string; slot: MindfulnessSlot; remainingIds: string[]; currentId: string };
+  metricsHistory?: MetricsEntry[];
+};
+
+type SyncMeta = {
+  updatedAt: string;
+  lastSyncedAt: string;
 };
 
 function useLocalStorage<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
@@ -54,7 +66,8 @@ const defaultTodayData = {
   hydration: 0,
   meals: { breakfast: false, lunch: false, dinner: false },
   walks: [] as { time: string; duration: string }[],
-  morningWater: false
+  morningWater: false,
+  meditationCount: 0
 };
 
 function getToday(): string {
@@ -141,6 +154,27 @@ const HealthSaga = () => {
 
   const [metricsHistory, setMetricsHistory] = useLocalStorage<MetricsEntry[]>('healthsaga-metrics-history', []);
 
+  const [syncMeta, setSyncMeta] = useLocalStorage<SyncMeta>('healthsaga-sync-meta', {
+    updatedAt: '',
+    lastSyncedAt: ''
+  });
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error' | 'success'>('idle');
+  const [syncError, setSyncError] = useState('');
+  const hasInitialized = useRef(false);
+  const isApplyingSnapshot = useRef(false);
+
+  const pushMetricEntry = useCallback(async (entry: MetricsEntry) => {
+    try {
+      await fetch('/api/metrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      });
+    } catch {
+      // Best-effort; local history is the source of truth until a sync succeeds.
+    }
+  }, []);
+
   const handleSaveMetrics = () => {
     const entry: MetricsEntry = {
       recordedAt: new Date().toISOString(),
@@ -161,6 +195,7 @@ const HealthSaga = () => {
     );
     if (hasValues) {
       setMetricsHistory(prev => [entry, ...prev].slice(0, 50));
+      void pushMetricEntry(entry);
     }
     setMetrics({
       bloodPressure: { systolic: '', diastolic: '' },
@@ -339,10 +374,122 @@ const HealthSaga = () => {
     setMindfulnessState
   ]);
 
+  const touchSnapshot = useCallback(() => {
+    setSyncMeta(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
+  }, [setSyncMeta]);
+
+  const buildSnapshot = useCallback((): SnapshotPayload => {
+    let storedToday: { date: string; data: typeof defaultTodayData } | undefined;
+    try {
+      const raw = localStorage.getItem('healthsaga-today');
+      if (raw) storedToday = JSON.parse(raw);
+    } catch {}
+
+    return {
+      today: storedToday ?? { date: getToday(), data: todayData },
+      reminders: walkReminders,
+      mindfulness: mindfulnessState,
+      metricsHistory
+    };
+  }, [todayData, walkReminders, mindfulnessState, metricsHistory]);
+
+  const applySnapshot = useCallback((snapshot: SnapshotPayload, updatedAt: string) => {
+    isApplyingSnapshot.current = true;
+    if (snapshot.today?.date === getToday() && snapshot.today.data) {
+      setTodayData(snapshot.today.data);
+    }
+    if (snapshot.reminders) setWalkReminders(snapshot.reminders);
+    if (snapshot.metricsHistory) setMetricsHistory(snapshot.metricsHistory);
+    if (snapshot.mindfulness) setMindfulnessState(snapshot.mindfulness);
+    setSyncMeta(prev => ({ ...prev, updatedAt, lastSyncedAt: new Date().toISOString() }));
+    queueMicrotask(() => {
+      isApplyingSnapshot.current = false;
+    });
+  }, [setMetricsHistory, setMindfulnessState, setSyncMeta, setTodayData, setWalkReminders]);
+
+  const pushSnapshot = useCallback(async () => {
+    const updatedAt = syncMeta.updatedAt || new Date().toISOString();
+    const snapshot = buildSnapshot();
+    await fetch('/api/snapshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updatedAt, data: snapshot })
+    });
+    setSyncMeta(prev => ({ ...prev, updatedAt, lastSyncedAt: new Date().toISOString() }));
+  }, [buildSnapshot, setSyncMeta, syncMeta.updatedAt]);
+
+  const syncWithServer = useCallback(async () => {
+    setSyncStatus('syncing');
+    setSyncError('');
+    try {
+      const response = await fetch('/api/snapshot');
+      if (!response.ok) {
+        if (response.status === 404) {
+          await pushSnapshot();
+          setSyncStatus('success');
+          return;
+        }
+        throw new Error(`Snapshot fetch failed (${response.status})`);
+      }
+
+      const payload = await response.json() as { updatedAt?: string; data?: SnapshotPayload | null };
+      const serverUpdatedAt = typeof payload.updatedAt === 'string' ? payload.updatedAt : '';
+      const localUpdatedAt = syncMeta.updatedAt || '';
+
+      if (!payload.data) {
+        await pushSnapshot();
+        setSyncStatus('success');
+        return;
+      }
+
+      if (!localUpdatedAt && serverUpdatedAt) {
+        applySnapshot(payload.data, serverUpdatedAt);
+        setSyncStatus('success');
+        return;
+      }
+
+      if (!serverUpdatedAt || (!localUpdatedAt || serverUpdatedAt > localUpdatedAt)) {
+        applySnapshot(payload.data, serverUpdatedAt || new Date().toISOString());
+      } else {
+        await pushSnapshot();
+      }
+      setSyncStatus('success');
+    } catch (error) {
+      setSyncStatus('error');
+      setSyncError(error instanceof Error ? error.message : 'Sync failed');
+    }
+  }, [applySnapshot, pushSnapshot, syncMeta.updatedAt]);
+
+  useEffect(() => {
+    void syncWithServer();
+  }, []);
+
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      return;
+    }
+    if (isApplyingSnapshot.current) return;
+    touchSnapshot();
+  }, [todayData, metricsHistory, walkReminders, mindfulnessState, touchSnapshot]);
+
+  const handleSyncNow = useCallback(() => {
+    void syncWithServer();
+  }, [syncWithServer]);
+
   const suggestedExercise = mindfulnessPool.find(exercise => exercise.id === mindfulnessState.currentId)
     ?? mindfulnessPool[0];
   const mindfulnessLabel = mindfulnessSlot === 'morning' ? 'Morning' : 'Evening';
   const hasMoreSuggestions = mindfulnessState.remainingIds.length > 0;
+  const meditationCount = Number.isFinite(todayData.meditationCount) ? todayData.meditationCount : 0;
+  const lastSyncedLabel = syncMeta.lastSyncedAt
+    ? new Date(syncMeta.lastSyncedAt).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    })
+    : '';
 
   return (
     <div style={{ 
@@ -1587,6 +1734,37 @@ const HealthSaga = () => {
                 >
                   Export Local Data
                 </button>
+                <button
+                  type="button"
+                  onClick={handleSyncNow}
+                  disabled={syncStatus === 'syncing'}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '2px solid #e0ddd8',
+                    borderRadius: '12px',
+                    background: syncStatus === 'syncing' ? '#f0ede7' : 'white',
+                    color: '#4a5550',
+                    cursor: syncStatus === 'syncing' ? 'default' : 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    transition: 'all 0.3s ease',
+                    marginTop: '8px'
+                  }}
+                >
+                  {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Now'}
+                </button>
+                {syncStatus !== 'idle' && (
+                  <div style={{
+                    marginTop: '8px',
+                    fontSize: '12px',
+                    color: syncStatus === 'error' ? '#b85c5c' : '#7a7a7a'
+                  }}>
+                    {syncStatus === 'success' && lastSyncedLabel ? `Last synced ${lastSyncedLabel}.` : null}
+                    {syncStatus === 'success' && !lastSyncedLabel ? 'Sync complete.' : null}
+                    {syncStatus === 'error' ? `Sync failed: ${syncError || 'check connection'}.` : null}
+                  </div>
+                )}
                 <div style={{ paddingTop: '8px' }}>
                   <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '8px' }}>
                     Recent readings
@@ -1662,6 +1840,65 @@ const HealthSaga = () => {
                 flexDirection: 'column',
                 gap: '12px'
               }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  background: '#f8f7f4'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Today check-ins</span>
+                    <span style={{ fontSize: '18px', color: '#4a5550', fontWeight: '600' }}>{meditationCount}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setTodayData(prev => ({
+                        ...prev,
+                        meditationCount: Math.max(0, (prev.meditationCount ?? 0) - 1)
+                      }))}
+                      aria-label="Decrease meditation check-ins"
+                      style={{
+                        border: 'none',
+                        background: '#f0ede7',
+                        color: '#6b6b6b',
+                        borderRadius: '8px',
+                        width: '32px',
+                        height: '32px',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        lineHeight: 1
+                      }}
+                    >
+                      -
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTodayData(prev => ({
+                        ...prev,
+                        meditationCount: (prev.meditationCount ?? 0) + 1
+                      }))}
+                      aria-label="Increase meditation check-ins"
+                      style={{
+                        border: 'none',
+                        background: '#e4eff3',
+                        color: '#3d7a8a',
+                        borderRadius: '8px',
+                        width: '32px',
+                        height: '32px',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        lineHeight: 1,
+                        fontWeight: '600'
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                   <div>
                     <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px', fontWeight: '500' }}>
