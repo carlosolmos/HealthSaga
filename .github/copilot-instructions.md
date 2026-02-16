@@ -8,7 +8,7 @@
 
 ## State and persistence patterns
 - Client state is persisted to `localStorage`. The helper `useLocalStorage` is defined inside [src/components/HealthSaga.tsx](src/components/HealthSaga.tsx#L16) and used for shared storage behavior.
-- Key storage names used today: `healthsaga-today`, `healthsaga-metrics`, `healthsaga-metrics-history`, `healthsaga-reminders`, `healthsaga-mindfulness` (see `loadTodayData` and `useLocalStorage`). Keep new data consistent with these conventions.
+- Key storage names used today: `healthsaga-today`, `healthsaga-metrics`, `healthsaga-metrics-history`, `healthsaga-reminders`, `healthsaga-mindfulness`, `healthsaga-sync-meta` (see `loadTodayData` and `useLocalStorage`). Keep new data consistent with these conventions.
 - `today` data is date-scoped and reset daily via `getToday()` and `loadTodayData()`; follow that pattern if adding new day-specific fields.
 
 ## UI conventions
@@ -18,11 +18,12 @@
 
 ## Dev workflows
 - Local dev/build: `npm run dev`, `npm run build`, `npm run preview` (see [README.md](README.md#L1)).
-- Docker build: [Dockerfile](Dockerfile) produces a static Nginx image; [Makefile](Makefile#L1) has `build-docker`.
+- Backend server: `npm run start` serves the built UI and API from Node + SQLite (see [server/index.js](server/index.js#L1)).
+- Docker build: [Dockerfile](Dockerfile) produces a Node image serving UI + API; [Makefile](Makefile#L1) has `build-docker`.
 - Traefik deployment uses [traefik/docker-compose.yml](traefik/docker-compose.yml#L1) and expects an external `traefik-network`.
 - Production deploy typically runs `docker compose -f traefik/docker-compose.yml up -d --build` from the server checkout (see [README.md](README.md#L1)).
 - iOS install flow is Safari-only and PWA needs HTTPS; push notifications are not enabled (see [README.md](README.md#L1)).
 
 ## Notes and boundaries
-- There is no backend in this repo; [backendstorage.md](backendstorage.md#L1) is a future plan only. Avoid introducing server assumptions unless explicitly requested.
+- Backend storage is implemented as a single-user Node + SQLite service in [server/index.js](server/index.js#L1) using snapshot sync and metrics history (see [backendstorage.md](backendstorage.md#L1)).
 - The legacy/prototype UI lives in [app/zen-health-tracker.tsx](app/zen-health-tracker.tsx#L1) and is not wired into the app.

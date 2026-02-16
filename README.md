@@ -5,6 +5,7 @@
 npm run dev      # Vite dev server with HMR
 npm run build    # tsc type-check + vite build → dist/
 npm run preview  # Serve production build locally
+npm run start    # Serve built UI + API (Node + SQLite)
 ```
 
 ## Build and deploy (iPhone/iPad)
@@ -35,14 +36,17 @@ The app should be served over HTTPS for PWA features to work.
 ### 1) Build and run the container (on the server)
 ```bash
 cd /opt/healthsaga
+mkdir -p /opt/healthsaga/data
 docker compose -f traefik/docker-compose.yml up -d --build
 ```
 
 ### 2) Requirements
 - A running Traefik instance on the `traefik-network` external network.
 - DNS pointing `healthsaga.iotitlan.com` to your server.
+- A writable host directory mounted at `/opt/healthsaga/data` for SQLite persistence.
 
 ### 3) Notes
 - If your Traefik is in a different network, update the network name in [traefik/docker-compose.yml](traefik/docker-compose.yml).
 - If you want a different domain, change the Host rules in [traefik/docker-compose.yml](traefik/docker-compose.yml).
+- The database lives at `/opt/healthsaga/data/healthsaga.db` on the host; back it up with a simple tar/rsync.
 
