@@ -54,7 +54,8 @@ const defaultTodayData = {
   hydration: 0,
   meals: { breakfast: false, lunch: false, dinner: false },
   walks: [] as { time: string; duration: string }[],
-  morningWater: false
+  morningWater: false,
+  meditationCount: 0
 };
 
 function getToday(): string {
@@ -343,6 +344,7 @@ const HealthSaga = () => {
     ?? mindfulnessPool[0];
   const mindfulnessLabel = mindfulnessSlot === 'morning' ? 'Morning' : 'Evening';
   const hasMoreSuggestions = mindfulnessState.remainingIds.length > 0;
+  const meditationCount = Number.isFinite(todayData.meditationCount) ? todayData.meditationCount : 0;
 
   return (
     <div style={{ 
@@ -1662,6 +1664,65 @@ const HealthSaga = () => {
                 flexDirection: 'column',
                 gap: '12px'
               }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  background: '#f8f7f4'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Today check-ins</span>
+                    <span style={{ fontSize: '18px', color: '#4a5550', fontWeight: '600' }}>{meditationCount}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setTodayData(prev => ({
+                        ...prev,
+                        meditationCount: Math.max(0, (prev.meditationCount ?? 0) - 1)
+                      }))}
+                      aria-label="Decrease meditation check-ins"
+                      style={{
+                        border: 'none',
+                        background: '#f0ede7',
+                        color: '#6b6b6b',
+                        borderRadius: '8px',
+                        width: '32px',
+                        height: '32px',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        lineHeight: 1
+                      }}
+                    >
+                      -
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTodayData(prev => ({
+                        ...prev,
+                        meditationCount: (prev.meditationCount ?? 0) + 1
+                      }))}
+                      aria-label="Increase meditation check-ins"
+                      style={{
+                        border: 'none',
+                        background: '#e4eff3',
+                        color: '#3d7a8a',
+                        borderRadius: '8px',
+                        width: '32px',
+                        height: '32px',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        lineHeight: 1,
+                        fontWeight: '600'
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                   <div>
                     <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px', fontWeight: '500' }}>
