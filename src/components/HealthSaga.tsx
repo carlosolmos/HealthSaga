@@ -579,8 +579,23 @@ const HealthSaga = () => {
         background: 'linear-gradient(135deg, #5492a3 0%, #3d7a8a 100%)',
         padding: '32px 24px',
         color: 'white',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: 'url(/graphic3.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.2,
+          pointerEvents: 'none'
+        }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
         <h1 style={{ 
           margin: 0, 
           fontSize: '28px', 
@@ -625,6 +640,7 @@ const HealthSaga = () => {
             </span>
           ) : null}
         </button>
+        </div>
       </div>
 
       <div style={{ 
