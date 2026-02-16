@@ -1694,11 +1694,12 @@ const HealthSaga = () => {
               background: 'white', 
               borderRadius: '16px', 
               padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              borderTop: '3px solid #5492a3'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <TrendingUp size={20} color="#bcd4da" />
-                <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                <TrendingUp size={20} color="#5492a3" />
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '600' }}>
                   Health Metrics
                 </h3>
               </div>
@@ -1815,9 +1816,13 @@ const HealthSaga = () => {
                     color: 'white',
                     cursor: 'pointer',
                     fontSize: '14px',
-                    fontWeight: '500',
+                    fontWeight: '600',
                     transition: 'all 0.3s ease',
-                    marginTop: '8px'
+                    marginTop: '8px',
+                    minHeight: '48px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
                   Save Metrics
@@ -1913,10 +1918,11 @@ const HealthSaga = () => {
               background: 'white', 
               borderRadius: '16px', 
               padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              borderTop: '3px solid #7da8a0'
             }}>
               <div style={{ marginBottom: '16px' }}>
-                <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '600', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>Trends</span>
                   <div style={{ display: 'flex', gap: '4px' }}>
                     {(['summary', 'charts'] as const).map(view => (
@@ -1947,16 +1953,19 @@ const HealthSaga = () => {
                       key={range}
                       onClick={() => setTrendDateRange(range)}
                       style={{
-                        padding: '8px 12px',
-                        border: trendDateRange === range ? 'none' : '2px solid #e0ddd8',
+                        padding: '8px 14px',
+                        border: trendDateRange === range ? '2px solid #5492a3' : '2px solid #e0ddd8',
                         borderRadius: '8px',
-                        background: trendDateRange === range ? '#5492a3' : 'white',
+                        background: trendDateRange === range ? '#f0f7f9' : 'white',
                         color: trendDateRange === range ? 'white' : '#4a5550',
                         cursor: 'pointer',
                         fontSize: '12px',
-                        fontWeight: '500',
+                        fontWeight: trendDateRange === range ? '600' : '500',
                         transition: 'all 0.2s ease',
-                        textTransform: 'capitalize'
+                        textTransform: 'capitalize',
+                        minHeight: '40px',
+                        display: 'flex',
+                        alignItems: 'center'
                       }}
                     >
                       {range === 'week' ? '7 days' : range === 'month' ? '30 days' : 'All'}
@@ -1966,7 +1975,7 @@ const HealthSaga = () => {
               </div>
 
               {trendView === 'summary' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginTop: '12px' }}>
                   {(() => {
                     const systolic = getTrendStats('systolic');
                     const diastolic = getTrendStats('diastolic');
@@ -1974,36 +1983,54 @@ const HealthSaga = () => {
                     const respiratoryRate = getTrendStats('respiratoryRate');
                     const meditation = getMeditationStats();
 
+                    const trendColorMap: Record<string, string> = {
+                      'Systolic BP': '#fef3ee',
+                      'Diastolic BP': '#ecf4f2',
+                      'Heart Rate': '#eef5f8',
+                      'Respiratory Rate': '#f4f3f0',
+                      'Meditations': '#f3f0f8'
+                    };
+
+                    const accentColorMap: Record<string, string> = {
+                      'Systolic BP': '#d97a5d',
+                      'Diastolic BP': '#4b9c8f',
+                      'Heart Rate': '#5492a3',
+                      'Respiratory Rate': '#a89d7f',
+                      'Meditations': '#8b5fb8'
+                    };
+
                     return [
                       { label: 'Systolic BP', unit: 'mmHg', stats: systolic },
                       { label: 'Diastolic BP', unit: 'mmHg', stats: diastolic },
                       { label: 'Heart Rate', unit: 'bpm', stats: heartRate },
                       { label: 'Respiratory Rate', unit: 'br/min', stats: respiratoryRate },
                       { label: 'Meditations', unit: 'total', stats: { latest: meditation.total, trend: meditation.trend, count: meditation.daysInRange } }
-                    ].map((card, idx) => (
+                    ].map((card) => (
                       <div
                         key={card.label}
                         style={{
-                          padding: '12px',
+                          padding: '14px',
                           borderRadius: '12px',
-                          background: '#f8f7f4',
-                          gridColumn: idx === 4 ? '1 / -1' : 'span 1'
+                          background: trendColorMap[card.label],
+                          border: `1px solid ${trendColorMap[card.label]}`,
+                          transition: 'all 0.2s ease'
                         }}
                       >
-                        <div style={{ fontSize: '11px', color: '#7a7a7a', fontWeight: '500', marginBottom: '6px' }}>
-                          {card.label} {card.unit ? `(${card.unit})` : ''}
+                        <div style={{ fontSize: '11px', color: '#7a7a7a', fontWeight: '500', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                          {card.label}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '18px', fontWeight: '600', color: '#4a5550' }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '22px', fontWeight: '700', color: accentColorMap[card.label] }}>
                             {card.stats.latest}
                           </span>
-                          <span style={{ fontSize: '14px', color: '#7a7a7a' }}>
+                          <span style={{ fontSize: '13px', color: accentColorMap[card.label], fontWeight: '600' }}>
                             {card.stats.trend}
                           </span>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#9b9b9b' }}>
+                        <div style={{ fontSize: '11px', color: '#9b9b9b', fontWeight: '500' }}>
                           {card.stats.count} {card.stats.count === 1 ? 'reading' : 'readings'}
                         </div>
+                        {card.unit && <div style={{ fontSize: '10px', color: '#c0b8b0', marginTop: '4px', fontStyle: 'italic' }}>{card.unit}</div>}
                       </div>
                     ));
                   })()}

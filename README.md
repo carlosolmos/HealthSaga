@@ -1,5 +1,18 @@
 # HealthSaga
 
+A personal health tracking PWA with biometrics logging, meditation tracking, nutrition guides, and trend visualization.
+
+## Features
+
+- **Daily health tracking**: Log blood pressure, heart rate, weight, respiratory rate, hydration, and meditation check-ins.
+- **Sync dashboard**: Real-time sync status badge showing connection state to backend server.
+- **Trends & Analytics**: 
+  - Summary cards with latest value, average, and trend direction for each metric.
+  - Line charts for Blood Pressure (systolic/diastolic), Heart Rate, Respiratory Rate, and Weight.
+  - Date-range filtering (7 days, 30 days, all) for both summary and chart views.
+- **Local-first architecture**: All data persists to localStorage and syncs to optional SQLite backend.
+- **PWA**: Installable on iOS (Safari only) and Android; works offline.
+
 ## Commands
 ```bash
 npm run dev      # Vite dev server with HMR

@@ -16,6 +16,8 @@
 - Styles are mostly inline in `HealthSaga` (no component library). Keep new UI blocks consistent with the current inline-style approach.
 - Global CSS in [src/index.css](src/index.css) is minimal and only sets resets; do not rely on global classes.
 - Icons use `lucide-react`; import from `lucide-react` as in [src/components/HealthSaga.tsx](src/components/HealthSaga.tsx#L1).
+- Charting uses `recharts` for line charts in trends visualization. Charts are client-side only; no server-side aggregation needed.
+- Trends feature: Tabbed interface in Metrics section with "Summary" (mini-cards) and "Charts" (line plots) views. Both respect `trendDateRange` state ('week', 'month', 'all') for client-side filtering.
 
 ## Dev workflows
 - Local dev/build: `npm run dev`, `npm run build`, `npm run preview` (see [README.md](README.md#L1)).
