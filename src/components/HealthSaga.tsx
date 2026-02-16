@@ -1704,12 +1704,12 @@ const HealthSaga = () => {
                 </h3>
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <label style={{ display: 'block', fontSize: '14px', color: '#7a7a7a', marginBottom: '8px' }}>
                     Blood Pressure
                   </label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <input
                       type="number"
                       placeholder="Systolic"
@@ -1724,7 +1724,8 @@ const HealthSaga = () => {
                         border: '2px solid #e0ddd8',
                         borderRadius: '12px',
                         fontSize: '14px',
-                        outline: 'none'
+                        outline: 'none',
+                        minHeight: '44px'
                       }}
                     />
                     <input
@@ -1741,7 +1742,8 @@ const HealthSaga = () => {
                         border: '2px solid #e0ddd8',
                         borderRadius: '12px',
                         fontSize: '14px',
-                        outline: 'none'
+                        outline: 'none',
+                        minHeight: '44px'
                       }}
                     />
                   </div>
@@ -1761,7 +1763,28 @@ const HealthSaga = () => {
                       border: '2px solid #e0ddd8',
                       borderRadius: '12px',
                       fontSize: '14px',
-                      outline: 'none'
+                      outline: 'none',
+                      minHeight: '44px'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', color: '#7a7a7a', marginBottom: '8px' }}>
+                    Respiratory Rate (br/min)
+                  </label>
+                  <input
+                    type="number"
+                    value={metrics.respiratoryRate}
+                    onChange={(e) => setMetrics(prev => ({ ...prev, respiratoryRate: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '2px solid #e0ddd8',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      minHeight: '44px'
                     }}
                   />
                 </div>
@@ -1780,26 +1803,8 @@ const HealthSaga = () => {
                       border: '2px solid #e0ddd8',
                       borderRadius: '12px',
                       fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '14px', color: '#7a7a7a', marginBottom: '8px' }}>
-                    Respiratory Rate (breaths/min)
-                  </label>
-                  <input
-                    type="number"
-                    value={metrics.respiratoryRate}
-                    onChange={(e) => setMetrics(prev => ({ ...prev, respiratoryRate: e.target.value }))}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #e0ddd8',
-                      borderRadius: '12px',
-                      fontSize: '14px',
-                      outline: 'none'
+                      outline: 'none',
+                      minHeight: '44px'
                     }}
                   />
                 </div>
@@ -1822,7 +1827,8 @@ const HealthSaga = () => {
                     minHeight: '48px',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center'
+                    justifyContent: 'center',
+                    gridColumn: '1 / -1'
                   }}
                 >
                   Save Metrics
@@ -1957,7 +1963,7 @@ const HealthSaga = () => {
                         border: trendDateRange === range ? '2px solid #5492a3' : '2px solid #e0ddd8',
                         borderRadius: '8px',
                         background: trendDateRange === range ? '#f0f7f9' : 'white',
-                        color: trendDateRange === range ? 'white' : '#4a5550',
+                        color: trendDateRange === range ? '#5492a3' : '#4a5550',
                         cursor: 'pointer',
                         fontSize: '12px',
                         fontWeight: trendDateRange === range ? '600' : '500',
