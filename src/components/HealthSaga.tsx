@@ -490,6 +490,12 @@ const HealthSaga = () => {
       minute: '2-digit'
     })
     : '';
+  const syncBadge = (() => {
+    if (syncStatus === 'syncing') return { label: 'Syncing', bg: 'rgba(255,255,255,0.18)', color: '#ffffff' };
+    if (syncStatus === 'error') return { label: 'Sync issue', bg: 'rgba(255,215,215,0.25)', color: '#ffffff' };
+    if (syncStatus === 'success') return { label: 'Synced', bg: 'rgba(210,255,242,0.22)', color: '#ffffff' };
+    return { label: 'Local', bg: 'rgba(255,255,255,0.18)', color: '#ffffff' };
+  })();
 
   return (
     <div style={{ 
@@ -519,6 +525,34 @@ const HealthSaga = () => {
         }}>
           {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
+        <button
+          type="button"
+          onClick={handleSyncNow}
+          disabled={syncStatus === 'syncing'}
+          style={{
+            marginTop: '8px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 10px',
+            borderRadius: '999px',
+            border: 'none',
+            background: syncBadge.bg,
+            color: syncBadge.color,
+            fontSize: '11px',
+            letterSpacing: '0.4px',
+            textTransform: 'uppercase',
+            cursor: syncStatus === 'syncing' ? 'default' : 'pointer',
+            opacity: syncStatus === 'syncing' ? 0.8 : 1
+          }}
+        >
+          <span>{syncBadge.label}</span>
+          {lastSyncedLabel && syncStatus === 'success' ? (
+            <span style={{ opacity: 0.85, textTransform: 'none', letterSpacing: 0 }}>
+              {lastSyncedLabel}
+            </span>
+          ) : null}
+        </button>
       </div>
 
       <div style={{ 
