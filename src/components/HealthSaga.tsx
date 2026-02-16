@@ -211,6 +211,58 @@ const HealthSaga = () => {
     { time: '4:30 PM', label: 'Evening walk', enabled: true }
   ]);
 
+  const [trendDateRange, setTrendDateRange] = useState<'week' | 'month' | 'all'>('week');
+
+  const getTrendStats = useCallback((metric: 'systolic' | 'diastolic' | 'heartRate' | 'weight' | 'respiratoryRate') => {
+    const now = new Date();
+    let startDate = new Date();
+    if (trendDateRange === 'week') startDate.setDate(now.getDate() - 7);
+    else if (trendDateRange === 'month') startDate.setDate(now.getDate() - 30);
+    else startDate = new Date(0);
+
+    const filtered = metricsHistory.filter(entry => new Date(entry.recordedAt) >= startDate);
+    if (filtered.length === 0) return { latest: '--', avg: '--', trend: '→', count: 0, min: '--', max: '--' };
+
+    const values = filtered
+      .map(entry => {
+        let val: string | undefined;
+        if (metric === 'systolic') val = entry.bloodPressure?.systolic;
+        else if (metric === 'diastolic') val = entry.bloodPressure?.diastolic;
+        else if (metric === 'heartRate') val = entry.heartRate;
+        else if (metric === 'weight') val = entry.weight;
+        else if (metric === 'respiratoryRate') val = entry.respiratoryRate;
+        return val ? Number(val) : null;
+      })
+      .filter((v): v is number => v !== null);
+
+    if (values.length === 0) return { latest: '--', avg: '--', trend: '→', count: 0, min: '--', max: '--' };
+
+    const latest = values[0];
+    const oldest = values[values.length - 1];
+    const avg = Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const trend = latest > oldest ? '↑' : latest < oldest ? '↓' : '→';
+
+    return { latest, avg, trend, count: values.length, min, max };
+  }, [metricsHistory, trendDateRange]);
+
+  const getMeditationStats = useCallback(() => {
+    const now = new Date();
+    let startDate = new Date();
+    if (trendDateRange === 'week') startDate.setDate(now.getDate() - 7);
+    else if (trendDateRange === 'month') startDate.setDate(now.getDate() - 30);
+    else startDate = new Date(0);
+
+    const daysInRange = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const todayCount = todayData.meditationCount || 0;
+    const total = todayCount;
+    const avg = daysInRange > 0 ? Math.round((total / daysInRange) * 10) / 10 : 0;
+    const trend = todayCount > 0 ? '↑' : '→';
+
+    return { total, avg, trend, daysInRange };
+  }, [todayData.meditationCount, trendDateRange]);
+
   const [showRecipes, setShowRecipes] = useState(false);
   const [expandedMealsSection, setExpandedMealsSection] = useState<string | null>(null);
   const [showHydrationTips, setShowHydrationTips] = useState(false);
@@ -1841,12 +1893,77 @@ const HealthSaga = () => {
               background: 'white', 
               borderRadius: '16px', 
               padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              textAlign: 'center'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
             }}>
-              <p style={{ margin: 0, fontSize: '14px', color: '#7a7a7a' }}>
-                Trend charts coming soon
-              </p>
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '8px' }}>
+                  Trends
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {(['week', 'month', 'all'] as const).map(range => (
+                    <button
+                      key={range}
+                      onClick={() => setTrendDateRange(range)}
+                      style={{
+                        padding: '8px 12px',
+                        border: trendDateRange === range ? 'none' : '2px solid #e0ddd8',
+                        borderRadius: '8px',
+                        background: trendDateRange === range ? '#5492a3' : 'white',
+                        color: trendDateRange === range ? 'white' : '#4a5550',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        transition: 'all 0.2s ease',
+                        textTransform: 'capitalize'
+                      }}
+                    >
+                      {range === 'week' ? '7 days' : range === 'month' ? '30 days' : 'All'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                {(() => {
+                  const systolic = getTrendStats('systolic');
+                  const diastolic = getTrendStats('diastolic');
+                  const heartRate = getTrendStats('heartRate');
+                  const respiratoryRate = getTrendStats('respiratoryRate');
+                  const meditation = getMeditationStats();
+
+                  return [
+                    { label: 'Systolic BP', unit: 'mmHg', stats: systolic },
+                    { label: 'Diastolic BP', unit: 'mmHg', stats: diastolic },
+                    { label: 'Heart Rate', unit: 'bpm', stats: heartRate },
+                    { label: 'Respiratory Rate', unit: 'br/min', stats: respiratoryRate },
+                    { label: 'Meditations', unit: 'total', stats: { latest: meditation.total, trend: meditation.trend, count: meditation.daysInRange } }
+                  ].map((card, idx) => (
+                    <div
+                      key={card.label}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '12px',
+                        background: '#f8f7f4',
+                        gridColumn: idx === 4 ? '1 / -1' : 'span 1'
+                      }}
+                    >
+                      <div style={{ fontSize: '11px', color: '#7a7a7a', fontWeight: '500', marginBottom: '6px' }}>
+                        {card.label} {card.unit ? `(${card.unit})` : ''}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '18px', fontWeight: '600', color: '#4a5550' }}>
+                          {card.stats.latest}
+                        </span>
+                        <span style={{ fontSize: '14px', color: '#7a7a7a' }}>
+                          {card.stats.trend}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#9b9b9b' }}>
+                        {card.stats.count} {card.stats.count === 1 ? 'reading' : 'readings'}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
             </div>
           </div>
         )}

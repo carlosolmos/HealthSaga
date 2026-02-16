@@ -10,6 +10,7 @@
 - Client state is persisted to `localStorage`. The helper `useLocalStorage` is defined inside [src/components/HealthSaga.tsx](src/components/HealthSaga.tsx#L16) and used for shared storage behavior.
 - Key storage names used today: `healthsaga-today`, `healthsaga-metrics`, `healthsaga-metrics-history`, `healthsaga-reminders`, `healthsaga-mindfulness`, `healthsaga-sync-meta` (see `loadTodayData` and `useLocalStorage`). Keep new data consistent with these conventions.
 - `today` data is date-scoped and reset daily via `getToday()` and `loadTodayData()`; follow that pattern if adding new day-specific fields.
+- Client-server sync: `syncWithServer()` fetches snapshot from `/api/snapshot` and pushes local state on changes. Conflict resolution uses "newest wins" based on `updated_at` timestamps. Metrics entries are posted to `/api/metrics` on save. Sync status badge in header shows state: `Syncing`, `Synced`, `Sync issue`, or `Local` (clickable to manual sync).
 
 ## UI conventions
 - Styles are mostly inline in `HealthSaga` (no component library). Keep new UI blocks consistent with the current inline-style approach.
