@@ -27,19 +27,9 @@ type MetricsEntry = {
   respiratoryRate?: string;
 };
 
-type Reminder = {
-  id: number;
-  type: 'walk' | 'hydration' | 'metrics' | 'mindfulness';
-  time: string;
-  description: string;
-  due?: boolean;
-  completed?: boolean;
-  enabled?: boolean;
-};
-
 type SnapshotPayload = {
   today?: { date: string; data: typeof defaultTodayData };
-  reminders?: Reminder[];
+  reminders?: { time: string; label: string; enabled: boolean }[];
   mindfulness?: { date: string; slot: MindfulnessSlot; remainingIds: string[]; currentId: string };
   metricsHistory?: MetricsEntry[];
 };
@@ -78,8 +68,7 @@ const defaultTodayData = {
   meals: { breakfast: false, lunch: false, dinner: false },
   walks: [] as { time: string; duration: string }[],
   morningWater: false,
-  meditationCount: 0,
-  reminders: {} as Record<number, boolean>
+  meditationCount: 0
 };
 
 function getToday(): string {
@@ -217,28 +206,11 @@ const HealthSaga = () => {
     });
   };
 
-  const [reminders, setReminders] = useLocalStorage<Reminder[]>('healthsaga-reminders', []);
-  const remindersPollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const fetchReminders = useCallback(async () => {
-    try {
-      const date = getToday();
-      const response = await fetch(`/api/reminders?date=${date}`);
-      if (!response.ok) return;
-      const data: Reminder[] = await response.json();
-      setReminders(data);
-    } catch {
-      // Use cached reminders on error
-    }
-  }, [setReminders]);
-
-  useEffect(() => {
-    fetchReminders();
-    remindersPollIntervalRef.current = setInterval(fetchReminders, 60 * 60 * 1000);
-    return () => {
-      if (remindersPollIntervalRef.current) clearInterval(remindersPollIntervalRef.current);
-    };
-  }, [fetchReminders]);
+  const [walkReminders, setWalkReminders] = useLocalStorage('healthsaga-reminders', [
+    { time: '10:00 AM', label: 'Morning walk', enabled: true },
+    { time: '2:00 PM', label: 'Afternoon walk', enabled: true },
+    { time: '4:30 PM', label: 'Evening walk', enabled: true }
+  ]);
 
   const [trendDateRange, setTrendDateRange] = useState<'week' | 'month' | 'all'>('week');
   const [trendView, setTrendView] = useState<'summary' | 'charts'>('summary');
@@ -424,19 +396,11 @@ const HealthSaga = () => {
     }));
   };
 
-  const toggleReminder = (reminderId: number) => {
-    setTodayData(prev => ({
-      ...prev,
-      reminders: {
-        ...prev.reminders,
-        [reminderId]: !prev.reminders[reminderId]
-      }
-    }));
+  const toggleWalkReminder = (index: number) => {
+    setWalkReminders(prev => prev.map((reminder, i) => 
+      i === index ? { ...reminder, enabled: !reminder.enabled } : reminder
+    ));
   };
-
-  const getDueReminders = useCallback((): Reminder[] => {
-    return reminders.filter(reminder => reminder.due && !todayData.reminders[reminder.id]);
-  }, [reminders, todayData.reminders]);
 
   const toggleFoodCategory = (category: string) => {
     setExpandedFoodCategory(expandedFoodCategory === category ? null : category);
@@ -495,23 +459,25 @@ const HealthSaga = () => {
 
     return {
       today: storedToday ?? { date: getToday(), data: todayData },
+      reminders: walkReminders,
       mindfulness: mindfulnessState,
       metricsHistory
     };
-  }, [todayData, mindfulnessState, metricsHistory]);
+  }, [todayData, walkReminders, mindfulnessState, metricsHistory]);
 
   const applySnapshot = useCallback((snapshot: SnapshotPayload, updatedAt: string) => {
     isApplyingSnapshot.current = true;
     if (snapshot.today?.date === getToday() && snapshot.today.data) {
       setTodayData(snapshot.today.data);
     }
+    if (snapshot.reminders) setWalkReminders(snapshot.reminders);
     if (snapshot.metricsHistory) setMetricsHistory(snapshot.metricsHistory);
     if (snapshot.mindfulness) setMindfulnessState(snapshot.mindfulness);
     setSyncMeta(prev => ({ ...prev, updatedAt, lastSyncedAt: new Date().toISOString() }));
     queueMicrotask(() => {
       isApplyingSnapshot.current = false;
     });
-  }, [setMetricsHistory, setMindfulnessState, setSyncMeta, setTodayData]);
+  }, [setMetricsHistory, setMindfulnessState, setSyncMeta, setTodayData, setWalkReminders]);
 
   const pushSnapshot = useCallback(async () => {
     const updatedAt = syncMeta.updatedAt || new Date().toISOString();
@@ -577,7 +543,7 @@ const HealthSaga = () => {
     }
     if (isApplyingSnapshot.current) return;
     touchSnapshot();
-  }, [todayData, metricsHistory, mindfulnessState, touchSnapshot]);
+  }, [todayData, metricsHistory, walkReminders, mindfulnessState, touchSnapshot]);
 
   const handleSyncNow = useCallback(() => {
     void syncWithServer();
@@ -707,58 +673,6 @@ const HealthSaga = () => {
           </button>
         ))}
       </div>
-
-      {/* Due Reminder Banner */}
-      {getDueReminders().length > 0 && (
-        <div style={{
-          background: '#fff9e6',
-          borderBottom: '1px solid #ffd700',
-          padding: '16px 24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '16px',
-          maxWidth: '800px',
-          margin: '0 auto',
-          width: '100%',
-          boxSizing: 'border-box'
-        }}>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: '500', color: '#856404' }}>
-              {getDueReminders().length === 1 
-                ? `${getDueReminders()[0].description} at ${getDueReminders()[0].time}`
-                : `${getDueReminders().length} reminders due`
-              }
-            </div>
-            {getDueReminders().length > 1 && (
-              <div style={{ fontSize: '12px', color: '#9a6b02', marginTop: '4px' }}>
-                {getDueReminders().map(r => r.description).join(', ')}
-              </div>
-            )}
-          </div>
-          <button
-            onClick={() => {
-              getDueReminders().forEach(r => {
-                toggleReminder(r.id);
-              });
-            }}
-            style={{
-              padding: '6px 12px',
-              border: 'none',
-              borderRadius: '8px',
-              background: '#ffd700',
-              color: '#856404',
-              cursor: 'pointer',
-              fontSize: '12px',
-              fontWeight: '500',
-              whiteSpace: 'nowrap',
-              transition: 'all 0.3s ease'
-            }}
-          >
-            Mark Done
-          </button>
-        </div>
-      )}
 
       <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
         
@@ -1044,7 +958,7 @@ const HealthSaga = () => {
               </button>
             </div>
 
-            {/* Reminders */}
+            {/* Walking Reminders */}
             <div style={{ 
               background: 'white', 
               borderRadius: '16px', 
@@ -1054,59 +968,45 @@ const HealthSaga = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                 <Activity size={20} color="#a89d7f" />
                 <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
-                  Today's Reminders
+                  Walk Reminders
                 </h3>
               </div>
-              {reminders.length === 0 ? (
-                <div style={{ fontSize: '14px', color: '#7a7a7a', textAlign: 'center', padding: '20px' }}>
-                  Loading reminders...
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {reminders.map((reminder) => (
-                    <div
-                      key={reminder.id}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {walkReminders.map((reminder, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      padding: '12px',
+                      border: '2px solid #e0ddd8',
+                      borderRadius: '12px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '14px', color: '#4a5550' }}>{reminder.time}</div>
+                      <div style={{ fontSize: '12px', color: '#7a7a7a' }}>{reminder.label}</div>
+                    </div>
+                    <button
+                      onClick={() => toggleWalkReminder(idx)}
                       style={{
-                        padding: '12px',
-                        border: reminder.due ? '2px solid #ffd700' : '2px solid #e0ddd8',
-                        borderRadius: '12px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        background: reminder.due ? '#fffbf0' : 'white',
+                        padding: '6px 12px',
+                        border: 'none',
+                        borderRadius: '8px',
+                        background: reminder.enabled ? '#5492a3' : '#e0ddd8',
+                        color: reminder.enabled ? 'white' : '#7a7a7a',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '500',
                         transition: 'all 0.3s ease'
                       }}
                     >
-                      <div>
-                        <div style={{ fontSize: '14px', color: '#4a5550', fontWeight: reminder.due ? '500' : '400' }}>
-                          {reminder.description}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#7a7a7a' }}>
-                          <span>{reminder.time}</span>
-                          <span style={{ marginLeft: '8px', fontSize: '11px' }}>({reminder.type})</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => toggleReminder(reminder.id)}
-                        style={{
-                          padding: '6px 12px',
-                          border: 'none',
-                          borderRadius: '8px',
-                          background: todayData.reminders[reminder.id] ? '#e0e0e0' : '#5492a3',
-                          color: todayData.reminders[reminder.id] ? '#7a7a7a' : 'white',
-                          cursor: 'pointer',
-                          fontSize: '12px',
-                          fontWeight: '500',
-                          transition: 'all 0.3s ease',
-                          textDecoration: todayData.reminders[reminder.id] ? 'line-through' : 'none'
-                        }}
-                      >
-                        {todayData.reminders[reminder.id] ? 'Done' : 'Mark Done'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                      {reminder.enabled ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}

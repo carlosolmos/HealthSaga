@@ -29,47 +29,9 @@ const schema = `
     weight TEXT,
     respiratory_rate TEXT
   );
-
-  CREATE TABLE IF NOT EXISTS reminders (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL,
-    time TEXT NOT NULL,
-    enabled_by_default INTEGER DEFAULT 1,
-    description TEXT
-  );
 `;
 
 db.exec(schema);
-
-// Seed default reminders if table is empty
-const countReminders = db.prepare('SELECT COUNT(*) as count FROM reminders');
-const reminderCount = countReminders.get().count;
-
-if (reminderCount === 0) {
-  const insertReminder = db.prepare(`
-    INSERT INTO reminders (type, time, enabled_by_default, description)
-    VALUES (?, ?, ?, ?)
-  `);
-
-  const defaultReminders = [
-    ['walk', '10:00', 1, 'Morning walk'],
-    ['walk', '14:00', 1, 'Afternoon walk'],
-    ['walk', '16:30', 1, 'Evening walk'],
-    ['hydration', '08:00', 1, 'Drink water'],
-    ['hydration', '10:00', 1, 'Drink water'],
-    ['hydration', '12:00', 1, 'Drink water'],
-    ['hydration', '14:00', 1, 'Drink water'],
-    ['hydration', '16:00', 1, 'Drink water'],
-    ['hydration', '18:00', 1, 'Drink water'],
-    ['metrics', '20:00', 1, 'Record health metrics'],
-    ['mindfulness', '06:00', 1, 'Morning mindfulness'],
-    ['mindfulness', '21:00', 1, 'Evening mindfulness']
-  ];
-
-  defaultReminders.forEach(reminder => {
-    insertReminder.run(...reminder);
-  });
-}
 
 const selectSnapshot = db.prepare('SELECT payload, updated_at FROM snapshot WHERE id = 1');
 const upsertSnapshot = db.prepare(`
@@ -83,7 +45,6 @@ const insertMetric = db.prepare(`
   INSERT INTO metrics (recorded_at, systolic, diastolic, heart_rate, weight, respiratory_rate)
   VALUES (?, ?, ?, ?, ?, ?)
 `);
-const selectReminders = db.prepare('SELECT id, type, time, description FROM reminders ORDER BY time ASC');
 
 app.get('/api/snapshot', (req, res) => {
   const row = selectSnapshot.get();
@@ -125,54 +86,6 @@ app.post('/api/metrics', (req, res) => {
 
   insertMetric.run(recordedAt, systolic, diastolic, heartRate, weight, respiratoryRate);
   res.json({ ok: true });
-});
-
-app.get('/api/reminders', (req, res) => {
-  const date = req.query.date;
-  if (!date) {
-    res.status(400).json({ error: 'date query parameter required (YYYY-MM-DD format)' });
-    return;
-  }
-
-  const reminders = selectReminders.all();
-  const now = new Date();
-  const currentHours = String(now.getHours()).padStart(2, '0');
-  const currentMinutes = String(now.getMinutes()).padStart(2, '0');
-  const currentTime = `${currentHours}:${currentMinutes}`;
-
-  // Get reminder completion state from snapshot
-  let completedReminders = {};
-  const snapshotRow = selectSnapshot.get();
-  if (snapshotRow) {
-    try {
-      const snapshotData = JSON.parse(snapshotRow.payload);
-      const todayData = snapshotData?.today?.data;
-      if (todayData?.reminders) {
-        completedReminders = todayData.reminders;
-      }
-    } catch {
-      // Ignore parse errors
-    }
-  }
-
-  const remindersWithStatus = reminders.map(reminder => {
-    const [rh, rm] = reminder.time.split(':');
-    const [ch, cm] = currentTime.split(':');
-    const reminderMinutes = parseInt(rh) * 60 + parseInt(rm);
-    const currentMinutes = parseInt(ch) * 60 + parseInt(cm);
-    const diffMins = Math.abs(currentMinutes - reminderMinutes);
-    
-    return {
-      id: reminder.id,
-      type: reminder.type,
-      time: reminder.time,
-      description: reminder.description,
-      due: diffMins <= 5,
-      completed: completedReminders[reminder.id] ?? false
-    };
-  });
-
-  res.json(remindersWithStatus);
 });
 
 const __filename = fileURLToPath(import.meta.url);
