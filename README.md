@@ -5,6 +5,7 @@ A personal health tracking PWA with biometrics logging, meditation tracking, nut
 ## Features
 
 - **Daily health tracking**: Log blood pressure, heart rate, weight, respiratory rate, hydration, and meditation check-ins.
+- **Reminders**: Polling-based reminders with in-app banner notifications (walks, hydration, health metrics, mindfulness). Polls on app launch and every 60 minutes; gracefully falls back to cached reminders when offline.
 - **Sync dashboard**: Real-time sync status badge showing connection state to backend server.
 - **Trends & Analytics**: 
   - Summary cards with latest value, average, and trend direction for each metric.
@@ -40,9 +41,18 @@ The app should be served over HTTPS for PWA features to work.
 3. Tap **Add to Home Screen**.
 4. Launch the app from the home screen (this enables the PWA experience).
 
+### Reminders (iOS-optimized polling)
+The app fetches reminders via polling on startup and every 60 minutes. Defaults include:
+- **Walks**: 10:00 AM, 2:00 PM, 4:30 PM
+- **Hydration**: Eight 2-hour intervals (8am–6pm)
+- **Health metrics**: 8:00 PM
+- **Mindfulness**: 6:00 AM, 9:00 PM
+
+When a reminder is due (within ±5 mins of scheduled time), a golden in-app banner appears. Users can dismiss individually or mark all due reminders done at once. Completion state syncs to the backend.
+
 ### Notes
 - iOS requires Safari for Add to Home Screen.
-- Push notifications are not enabled here yet.
+- Web Push API is not used (iOS Safari doesn't support it). Polling serves as the iOS-compatible reminder mechanism.
 
 ## Docker + Traefik deployment
 
