@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown, Info } from 'lucide-react';
+import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown, Info, Moon } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import meditationExercisesData from '../data/meditation_exercises.json';
 import { proteinPortions, fiberGuide, weeklyRotation, sugarGuide, hydrationGuide } from '../data/nutrition_guide';
