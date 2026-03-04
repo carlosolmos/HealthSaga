@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown, Info, Moon } from 'lucide-react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown, Info } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import meditationExercisesData from '../data/meditation_exercises.json';
 import { proteinPortions, fiberGuide, weeklyRotation, sugarGuide, hydrationGuide } from '../data/nutrition_guide';
 
@@ -24,6 +25,18 @@ type MetricsEntry = {
   heartRate?: string;
   weight?: string;
   respiratoryRate?: string;
+};
+
+type SnapshotPayload = {
+  today?: { date: string; data: typeof defaultTodayData };
+  reminders?: { time: string; label: string; enabled: boolean }[];
+  mindfulness?: { date: string; slot: MindfulnessSlot; remainingIds: string[]; currentId: string };
+  metricsHistory?: MetricsEntry[];
+};
+
+type SyncMeta = {
+  updatedAt: string;
+  lastSyncedAt: string;
 };
 
 function useLocalStorage<T>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
@@ -54,7 +67,8 @@ const defaultTodayData = {
   hydration: 0,
   meals: { breakfast: false, lunch: false, dinner: false },
   walks: [] as { time: string; duration: string }[],
-  morningWater: false
+  morningWater: false,
+  meditationCount: 0
 };
 
 function getToday(): string {
@@ -141,6 +155,27 @@ const HealthSaga = () => {
 
   const [metricsHistory, setMetricsHistory] = useLocalStorage<MetricsEntry[]>('healthsaga-metrics-history', []);
 
+  const [syncMeta, setSyncMeta] = useLocalStorage<SyncMeta>('healthsaga-sync-meta', {
+    updatedAt: '',
+    lastSyncedAt: ''
+  });
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'error' | 'success'>('idle');
+  const [syncError, setSyncError] = useState('');
+  const hasInitialized = useRef(false);
+  const isApplyingSnapshot = useRef(false);
+
+  const pushMetricEntry = useCallback(async (entry: MetricsEntry) => {
+    try {
+      await fetch('/api/metrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      });
+    } catch {
+      // Best-effort; local history is the source of truth until a sync succeeds.
+    }
+  }, []);
+
   const handleSaveMetrics = () => {
     const entry: MetricsEntry = {
       recordedAt: new Date().toISOString(),
@@ -161,6 +196,7 @@ const HealthSaga = () => {
     );
     if (hasValues) {
       setMetricsHistory(prev => [entry, ...prev].slice(0, 50));
+      void pushMetricEntry(entry);
     }
     setMetrics({
       bloodPressure: { systolic: '', diastolic: '' },
@@ -175,6 +211,77 @@ const HealthSaga = () => {
     { time: '2:00 PM', label: 'Afternoon walk', enabled: true },
     { time: '4:30 PM', label: 'Evening walk', enabled: true }
   ]);
+
+  const [trendDateRange, setTrendDateRange] = useState<'week' | 'month' | 'all'>('week');
+  const [trendView, setTrendView] = useState<'summary' | 'charts'>('summary');
+
+  const getTrendStats = useCallback((metric: 'systolic' | 'diastolic' | 'heartRate' | 'weight' | 'respiratoryRate') => {
+    const now = new Date();
+    let startDate = new Date();
+    if (trendDateRange === 'week') startDate.setDate(now.getDate() - 7);
+    else if (trendDateRange === 'month') startDate.setDate(now.getDate() - 30);
+    else startDate = new Date(0);
+
+    const filtered = metricsHistory.filter(entry => new Date(entry.recordedAt) >= startDate);
+    if (filtered.length === 0) return { latest: '--', avg: '--', trend: '→', count: 0, min: '--', max: '--' };
+
+    const values = filtered
+      .map(entry => {
+        let val: string | undefined;
+        if (metric === 'systolic') val = entry.bloodPressure?.systolic;
+        else if (metric === 'diastolic') val = entry.bloodPressure?.diastolic;
+        else if (metric === 'heartRate') val = entry.heartRate;
+        else if (metric === 'weight') val = entry.weight;
+        else if (metric === 'respiratoryRate') val = entry.respiratoryRate;
+        return val ? Number(val) : null;
+      })
+      .filter((v): v is number => v !== null);
+
+    if (values.length === 0) return { latest: '--', avg: '--', trend: '→', count: 0, min: '--', max: '--' };
+
+    const latest = values[0];
+    const oldest = values[values.length - 1];
+    const avg = Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const trend = latest > oldest ? '↑' : latest < oldest ? '↓' : '→';
+
+    return { latest, avg, trend, count: values.length, min, max };
+  }, [metricsHistory, trendDateRange]);
+
+  const getMeditationStats = useCallback(() => {
+    const now = new Date();
+    let startDate = new Date();
+    if (trendDateRange === 'week') startDate.setDate(now.getDate() - 7);
+    else if (trendDateRange === 'month') startDate.setDate(now.getDate() - 30);
+    else startDate = new Date(0);
+
+    const daysInRange = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const todayCount = todayData.meditationCount || 0;
+    const total = todayCount;
+    const avg = daysInRange > 0 ? Math.round((total / daysInRange) * 10) / 10 : 0;
+    const trend = todayCount > 0 ? '↑' : '→';
+
+    return { total, avg, trend, daysInRange };
+  }, [todayData.meditationCount, trendDateRange]);
+
+  const getChartData = useCallback(() => {
+    const now = new Date();
+    let startDate = new Date();
+    if (trendDateRange === 'week') startDate.setDate(now.getDate() - 7);
+    else if (trendDateRange === 'month') startDate.setDate(now.getDate() - 30);
+    else startDate = new Date(0);
+
+    const filtered = metricsHistory.filter(entry => new Date(entry.recordedAt) >= startDate).reverse();
+    return filtered.map(entry => ({
+      timestamp: new Date(entry.recordedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      systolic: entry.bloodPressure?.systolic ? Number(entry.bloodPressure.systolic) : null,
+      diastolic: entry.bloodPressure?.diastolic ? Number(entry.bloodPressure.diastolic) : null,
+      heartRate: entry.heartRate ? Number(entry.heartRate) : null,
+      respiratoryRate: entry.respiratoryRate ? Number(entry.respiratoryRate) : null,
+      weight: entry.weight ? Number(entry.weight) : null
+    }));
+  }, [metricsHistory, trendDateRange]);
 
   const [showRecipes, setShowRecipes] = useState(false);
   const [expandedMealsSection, setExpandedMealsSection] = useState<string | null>(null);
@@ -342,10 +449,128 @@ const HealthSaga = () => {
     setMindfulnessState
   ]);
 
+  const touchSnapshot = useCallback(() => {
+    setSyncMeta(prev => ({ ...prev, updatedAt: new Date().toISOString() }));
+  }, [setSyncMeta]);
+
+  const buildSnapshot = useCallback((): SnapshotPayload => {
+    let storedToday: { date: string; data: typeof defaultTodayData } | undefined;
+    try {
+      const raw = localStorage.getItem('healthsaga-today');
+      if (raw) storedToday = JSON.parse(raw);
+    } catch {}
+
+    return {
+      today: storedToday ?? { date: getToday(), data: todayData },
+      reminders: walkReminders,
+      mindfulness: mindfulnessState,
+      metricsHistory
+    };
+  }, [todayData, walkReminders, mindfulnessState, metricsHistory]);
+
+  const applySnapshot = useCallback((snapshot: SnapshotPayload, updatedAt: string) => {
+    isApplyingSnapshot.current = true;
+    if (snapshot.today?.date === getToday() && snapshot.today.data) {
+      setTodayData(snapshot.today.data);
+    }
+    if (snapshot.reminders) setWalkReminders(snapshot.reminders);
+    if (snapshot.metricsHistory) setMetricsHistory(snapshot.metricsHistory);
+    if (snapshot.mindfulness) setMindfulnessState(snapshot.mindfulness);
+    setSyncMeta(prev => ({ ...prev, updatedAt, lastSyncedAt: new Date().toISOString() }));
+    queueMicrotask(() => {
+      isApplyingSnapshot.current = false;
+    });
+  }, [setMetricsHistory, setMindfulnessState, setSyncMeta, setTodayData, setWalkReminders]);
+
+  const pushSnapshot = useCallback(async () => {
+    const updatedAt = syncMeta.updatedAt || new Date().toISOString();
+    const snapshot = buildSnapshot();
+    await fetch('/api/snapshot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updatedAt, data: snapshot })
+    });
+    setSyncMeta(prev => ({ ...prev, updatedAt, lastSyncedAt: new Date().toISOString() }));
+  }, [buildSnapshot, setSyncMeta, syncMeta.updatedAt]);
+
+  const syncWithServer = useCallback(async () => {
+    setSyncStatus('syncing');
+    setSyncError('');
+    try {
+      const response = await fetch('/api/snapshot');
+      if (!response.ok) {
+        if (response.status === 404) {
+          await pushSnapshot();
+          setSyncStatus('success');
+          return;
+        }
+        throw new Error(`Snapshot fetch failed (${response.status})`);
+      }
+
+      const payload = await response.json() as { updatedAt?: string; data?: SnapshotPayload | null };
+      const serverUpdatedAt = typeof payload.updatedAt === 'string' ? payload.updatedAt : '';
+      const localUpdatedAt = syncMeta.updatedAt || '';
+
+      if (!payload.data) {
+        await pushSnapshot();
+        setSyncStatus('success');
+        return;
+      }
+
+      if (!localUpdatedAt && serverUpdatedAt) {
+        applySnapshot(payload.data, serverUpdatedAt);
+        setSyncStatus('success');
+        return;
+      }
+
+      if (!serverUpdatedAt || (!localUpdatedAt || serverUpdatedAt > localUpdatedAt)) {
+        applySnapshot(payload.data, serverUpdatedAt || new Date().toISOString());
+      } else {
+        await pushSnapshot();
+      }
+      setSyncStatus('success');
+    } catch (error) {
+      setSyncStatus('error');
+      setSyncError(error instanceof Error ? error.message : 'Sync failed');
+    }
+  }, [applySnapshot, pushSnapshot, syncMeta.updatedAt]);
+
+  useEffect(() => {
+    void syncWithServer();
+  }, []);
+
+  useEffect(() => {
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      return;
+    }
+    if (isApplyingSnapshot.current) return;
+    touchSnapshot();
+  }, [todayData, metricsHistory, walkReminders, mindfulnessState, touchSnapshot]);
+
+  const handleSyncNow = useCallback(() => {
+    void syncWithServer();
+  }, [syncWithServer]);
+
   const suggestedExercise = mindfulnessPool.find(exercise => exercise.id === mindfulnessState.currentId)
     ?? mindfulnessPool[0];
   const mindfulnessLabel = mindfulnessSlot === 'morning' ? 'Morning' : 'Evening';
   const hasMoreSuggestions = mindfulnessState.remainingIds.length > 0;
+  const meditationCount = Number.isFinite(todayData.meditationCount) ? todayData.meditationCount : 0;
+  const lastSyncedLabel = syncMeta.lastSyncedAt
+    ? new Date(syncMeta.lastSyncedAt).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    })
+    : '';
+  const syncBadge = (() => {
+    if (syncStatus === 'syncing') return { label: 'Syncing', bg: 'rgba(255,255,255,0.18)', color: '#ffffff' };
+    if (syncStatus === 'error') return { label: 'Sync issue', bg: 'rgba(255,215,215,0.25)', color: '#ffffff' };
+    if (syncStatus === 'success') return { label: 'Synced', bg: 'rgba(210,255,242,0.22)', color: '#ffffff' };
+    return { label: 'Local', bg: 'rgba(255,255,255,0.18)', color: '#ffffff' };
+  })();
 
   return (
     <div style={{ 
@@ -357,8 +582,23 @@ const HealthSaga = () => {
         background: 'linear-gradient(135deg, #5492a3 0%, #3d7a8a 100%)',
         padding: '32px 24px',
         color: 'white',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: 'url(/graphic3.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.2,
+          pointerEvents: 'none'
+        }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
         <h1 style={{ 
           margin: 0, 
           fontSize: '28px', 
@@ -375,6 +615,35 @@ const HealthSaga = () => {
         }}>
           {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
         </p>
+        <button
+          type="button"
+          onClick={handleSyncNow}
+          disabled={syncStatus === 'syncing'}
+          style={{
+            marginTop: '8px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 10px',
+            borderRadius: '999px',
+            border: 'none',
+            background: syncBadge.bg,
+            color: syncBadge.color,
+            fontSize: '11px',
+            letterSpacing: '0.4px',
+            textTransform: 'uppercase',
+            cursor: syncStatus === 'syncing' ? 'default' : 'pointer',
+            opacity: syncStatus === 'syncing' ? 0.8 : 1
+          }}
+        >
+          <span>{syncBadge.label}</span>
+          {lastSyncedLabel && syncStatus === 'success' ? (
+            <span style={{ opacity: 0.85, textTransform: 'none', letterSpacing: 0 }}>
+              {lastSyncedLabel}
+            </span>
+          ) : null}
+        </button>
+        </div>
       </div>
 
       <div style={{ 
@@ -1444,21 +1713,22 @@ const HealthSaga = () => {
               background: 'white', 
               borderRadius: '16px', 
               padding: '20px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+              borderTop: '3px solid #5492a3'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <TrendingUp size={20} color="#bcd4da" />
-                <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                <TrendingUp size={20} color="#5492a3" />
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '600' }}>
                   Health Metrics
                 </h3>
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <label style={{ display: 'block', fontSize: '14px', color: '#7a7a7a', marginBottom: '8px' }}>
                     Blood Pressure
                   </label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <input
                       type="number"
                       placeholder="Systolic"
@@ -1473,7 +1743,8 @@ const HealthSaga = () => {
                         border: '2px solid #e0ddd8',
                         borderRadius: '12px',
                         fontSize: '14px',
-                        outline: 'none'
+                        outline: 'none',
+                        minHeight: '44px'
                       }}
                     />
                     <input
@@ -1490,7 +1761,8 @@ const HealthSaga = () => {
                         border: '2px solid #e0ddd8',
                         borderRadius: '12px',
                         fontSize: '14px',
-                        outline: 'none'
+                        outline: 'none',
+                        minHeight: '44px'
                       }}
                     />
                   </div>
@@ -1510,7 +1782,28 @@ const HealthSaga = () => {
                       border: '2px solid #e0ddd8',
                       borderRadius: '12px',
                       fontSize: '14px',
-                      outline: 'none'
+                      outline: 'none',
+                      minHeight: '44px'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '14px', color: '#7a7a7a', marginBottom: '8px' }}>
+                    Respiratory Rate (br/min)
+                  </label>
+                  <input
+                    type="number"
+                    value={metrics.respiratoryRate}
+                    onChange={(e) => setMetrics(prev => ({ ...prev, respiratoryRate: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '2px solid #e0ddd8',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      minHeight: '44px'
                     }}
                   />
                 </div>
@@ -1529,26 +1822,8 @@ const HealthSaga = () => {
                       border: '2px solid #e0ddd8',
                       borderRadius: '12px',
                       fontSize: '14px',
-                      outline: 'none'
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '14px', color: '#7a7a7a', marginBottom: '8px' }}>
-                    Respiratory Rate (breaths/min)
-                  </label>
-                  <input
-                    type="number"
-                    value={metrics.respiratoryRate}
-                    onChange={(e) => setMetrics(prev => ({ ...prev, respiratoryRate: e.target.value }))}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #e0ddd8',
-                      borderRadius: '12px',
-                      fontSize: '14px',
-                      outline: 'none'
+                      outline: 'none',
+                      minHeight: '44px'
                     }}
                   />
                 </div>
@@ -1565,9 +1840,14 @@ const HealthSaga = () => {
                     color: 'white',
                     cursor: 'pointer',
                     fontSize: '14px',
-                    fontWeight: '500',
+                    fontWeight: '600',
                     transition: 'all 0.3s ease',
-                    marginTop: '8px'
+                    marginTop: '8px',
+                    minHeight: '48px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gridColumn: '1 / -1'
                   }}
                 >
                   Save Metrics
@@ -1590,6 +1870,37 @@ const HealthSaga = () => {
                 >
                   Export Local Data
                 </button>
+                <button
+                  type="button"
+                  onClick={handleSyncNow}
+                  disabled={syncStatus === 'syncing'}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '2px solid #e0ddd8',
+                    borderRadius: '12px',
+                    background: syncStatus === 'syncing' ? '#f0ede7' : 'white',
+                    color: '#4a5550',
+                    cursor: syncStatus === 'syncing' ? 'default' : 'pointer',
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    transition: 'all 0.3s ease',
+                    marginTop: '8px'
+                  }}
+                >
+                  {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Now'}
+                </button>
+                {syncStatus !== 'idle' && (
+                  <div style={{
+                    marginTop: '8px',
+                    fontSize: '12px',
+                    color: syncStatus === 'error' ? '#b85c5c' : '#7a7a7a'
+                  }}>
+                    {syncStatus === 'success' && lastSyncedLabel ? `Last synced ${lastSyncedLabel}.` : null}
+                    {syncStatus === 'success' && !lastSyncedLabel ? 'Sync complete.' : null}
+                    {syncStatus === 'error' ? `Sync failed: ${syncError || 'check connection'}.` : null}
+                  </div>
+                )}
                 <div style={{ paddingTop: '8px' }}>
                   <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500', marginBottom: '8px' }}>
                     Recent readings
@@ -1633,11 +1944,193 @@ const HealthSaga = () => {
               borderRadius: '16px', 
               padding: '20px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-              textAlign: 'center'
+              borderTop: '3px solid #7da8a0'
             }}>
-              <p style={{ margin: 0, fontSize: '14px', color: '#7a7a7a' }}>
-                Trend charts coming soon
-              </p>
+              <div style={{ marginBottom: '16px' }}>
+                <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '600', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Trends</span>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {(['summary', 'charts'] as const).map(view => (
+                      <button
+                        key={view}
+                        onClick={() => setTrendView(view)}
+                        style={{
+                          padding: '4px 10px',
+                          border: trendView === view ? 'none' : '1px solid #e0ddd8',
+                          borderRadius: '6px',
+                          background: trendView === view ? '#5492a3' : 'white',
+                          color: trendView === view ? 'white' : '#4a5550',
+                          cursor: 'pointer',
+                          fontSize: '11px',
+                          fontWeight: '500',
+                          transition: 'all 0.2s ease',
+                          textTransform: 'capitalize'
+                        }}
+                      >
+                        {view}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {(['week', 'month', 'all'] as const).map(range => (
+                    <button
+                      key={range}
+                      onClick={() => setTrendDateRange(range)}
+                      style={{
+                        padding: '8px 14px',
+                        border: trendDateRange === range ? '2px solid #5492a3' : '2px solid #e0ddd8',
+                        borderRadius: '8px',
+                        background: trendDateRange === range ? '#f0f7f9' : 'white',
+                        color: trendDateRange === range ? '#5492a3' : '#4a5550',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: trendDateRange === range ? '600' : '500',
+                        transition: 'all 0.2s ease',
+                        textTransform: 'capitalize',
+                        minHeight: '40px',
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}
+                    >
+                      {range === 'week' ? '7 days' : range === 'month' ? '30 days' : 'All'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {trendView === 'summary' && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginTop: '12px' }}>
+                  {(() => {
+                    const systolic = getTrendStats('systolic');
+                    const diastolic = getTrendStats('diastolic');
+                    const heartRate = getTrendStats('heartRate');
+                    const respiratoryRate = getTrendStats('respiratoryRate');
+                    const meditation = getMeditationStats();
+
+                    const trendColorMap: Record<string, string> = {
+                      'Systolic BP': '#fef3ee',
+                      'Diastolic BP': '#ecf4f2',
+                      'Heart Rate': '#eef5f8',
+                      'Respiratory Rate': '#f4f3f0',
+                      'Meditations': '#f3f0f8'
+                    };
+
+                    const accentColorMap: Record<string, string> = {
+                      'Systolic BP': '#d97a5d',
+                      'Diastolic BP': '#4b9c8f',
+                      'Heart Rate': '#5492a3',
+                      'Respiratory Rate': '#a89d7f',
+                      'Meditations': '#8b5fb8'
+                    };
+
+                    return [
+                      { label: 'Systolic BP', unit: 'mmHg', stats: systolic },
+                      { label: 'Diastolic BP', unit: 'mmHg', stats: diastolic },
+                      { label: 'Heart Rate', unit: 'bpm', stats: heartRate },
+                      { label: 'Respiratory Rate', unit: 'br/min', stats: respiratoryRate },
+                      { label: 'Meditations', unit: 'total', stats: { latest: meditation.total, trend: meditation.trend, count: meditation.daysInRange } }
+                    ].map((card) => (
+                      <div
+                        key={card.label}
+                        style={{
+                          padding: '14px',
+                          borderRadius: '12px',
+                          background: trendColorMap[card.label],
+                          border: `1px solid ${trendColorMap[card.label]}`,
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <div style={{ fontSize: '11px', color: '#7a7a7a', fontWeight: '500', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                          {card.label}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '22px', fontWeight: '700', color: accentColorMap[card.label] }}>
+                            {card.stats.latest}
+                          </span>
+                          <span style={{ fontSize: '13px', color: accentColorMap[card.label], fontWeight: '600' }}>
+                            {card.stats.trend}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#9b9b9b', fontWeight: '500' }}>
+                          {card.stats.count} {card.stats.count === 1 ? 'reading' : 'readings'}
+                        </div>
+                        {card.unit && <div style={{ fontSize: '10px', color: '#c0b8b0', marginTop: '4px', fontStyle: 'italic' }}>{card.unit}</div>}
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+
+              {trendView === 'charts' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '16px' }}>
+                  {getChartData().length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '24px', fontSize: '14px', color: '#9b9b9b' }}>
+                      No data available for this date range.
+                    </div>
+                  ) : (
+                    <>
+                      {getTrendStats('systolic').count > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Blood Pressure</div>
+                          <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={getChartData()}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e0ddd8" />
+                              <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} />
+                              <YAxis label={{ value: 'mmHg', angle: -90, position: 'insideLeft' }} />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="systolic" stroke="#d97a5d" name="Systolic" dot={false} />
+                              <Line type="monotone" dataKey="diastolic" stroke="#7da8a0" name="Diastolic" dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                      {getTrendStats('heartRate').count > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Heart Rate</div>
+                          <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={getChartData()}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e0ddd8" />
+                              <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} />
+                              <YAxis label={{ value: 'bpm', angle: -90, position: 'insideLeft' }} />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="heartRate" stroke="#5492a3" name="HR" dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                      {getTrendStats('respiratoryRate').count > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Respiratory Rate</div>
+                          <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={getChartData()}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e0ddd8" />
+                              <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} />
+                              <YAxis label={{ value: 'br/min', angle: -90, position: 'insideLeft' }} />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="respiratoryRate" stroke="#a89d7f" name="RR" dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                      {getTrendStats('weight').count > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Weight</div>
+                          <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={getChartData()}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e0ddd8" />
+                              <XAxis dataKey="timestamp" tick={{ fontSize: 11 }} />
+                              <YAxis label={{ value: 'lbs', angle: -90, position: 'insideLeft' }} />
+                              <Tooltip />
+                              <Line type="monotone" dataKey="weight" stroke="#8b9d83" name="Weight" dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1665,6 +2158,65 @@ const HealthSaga = () => {
                 flexDirection: 'column',
                 gap: '12px'
               }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  background: '#f8f7f4'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span style={{ fontSize: '12px', color: '#7a7a7a', fontWeight: '500' }}>Today check-ins</span>
+                    <span style={{ fontSize: '18px', color: '#4a5550', fontWeight: '600' }}>{meditationCount}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setTodayData(prev => ({
+                        ...prev,
+                        meditationCount: Math.max(0, (prev.meditationCount ?? 0) - 1)
+                      }))}
+                      aria-label="Decrease meditation check-ins"
+                      style={{
+                        border: 'none',
+                        background: '#f0ede7',
+                        color: '#6b6b6b',
+                        borderRadius: '8px',
+                        width: '32px',
+                        height: '32px',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        lineHeight: 1
+                      }}
+                    >
+                      -
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTodayData(prev => ({
+                        ...prev,
+                        meditationCount: (prev.meditationCount ?? 0) + 1
+                      }))}
+                      aria-label="Increase meditation check-ins"
+                      style={{
+                        border: 'none',
+                        background: '#e4eff3',
+                        color: '#3d7a8a',
+                        borderRadius: '8px',
+                        width: '32px',
+                        height: '32px',
+                        cursor: 'pointer',
+                        fontSize: '18px',
+                        lineHeight: 1,
+                        fontWeight: '600'
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
                   <div>
                     <div style={{ fontSize: '12px', color: '#7a7a7a', marginBottom: '4px', fontWeight: '500' }}>
