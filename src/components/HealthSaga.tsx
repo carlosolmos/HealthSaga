@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown, Info } from 'lucide-react';
+import { Plus, Check, TrendingUp, Droplet, Pill, Utensils, Activity, ChevronRight, ChevronDown, Info, Moon } from 'lucide-react';
 import meditationExercisesData from '../data/meditation_exercises.json';
 import { proteinPortions, fiberGuide, weeklyRotation, sugarGuide, hydrationGuide } from '../data/nutrition_guide';
 
@@ -181,6 +181,9 @@ const HealthSaga = () => {
   const [showHydrationTips, setShowHydrationTips] = useState(false);
 
   const [expandedFoodCategory, setExpandedFoodCategory] = useState<string | null>(null);
+
+  const [expandedDetoxSection, setExpandedDetoxSection] = useState<string | null>(null);
+  const [expandedDetoxFood, setExpandedDetoxFood] = useState<string | null>(null);
 
   const foodLists = {
     protein: {
@@ -382,7 +385,7 @@ const HealthSaga = () => {
         top: 0,
         zIndex: 10
       }}>
-        {['today', 'meals', 'metrics', 'mindfulness'].map(tab => (
+        {['today', 'meals', 'metrics', 'mindfulness', 'detox'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -1746,6 +1749,561 @@ const HealthSaga = () => {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'detox' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+            {/* Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #6b8f51 0%, #4a7a36 100%)',
+              borderRadius: '16px',
+              padding: '20px',
+              color: 'white'
+            }}>
+              <h2 style={{ margin: '0 0 6px 0', fontSize: '18px', fontWeight: '600', letterSpacing: '0.05em' }}>
+                Liver Support Detox
+              </h2>
+              <p style={{ margin: 0, fontSize: '13px', opacity: 0.85, lineHeight: 1.5 }}>
+                Mishan Zia Wellness — Informational reference guide
+              </p>
+            </div>
+
+            {/* Daily Meal Schedule */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                <Utensils size={20} color="#6b8f51" />
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                  Daily Meal Schedule
+                </h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { time: 'Morning', label: 'First Drink', items: ['1 cup hot water', 'Tiny squeeze lemon', 'Tiny pinch salt'] },
+                  { time: '8 am', label: 'Breakfast Shake', items: ['1 scoop Mediclear', '2 cups water', 'Berries'] },
+                  { time: '11 am', label: 'Lunch', items: ['Follow food list', 'Follow plate guide'] },
+                  { time: '3 pm', label: 'Shake (optional)', items: ['1 scoop Mediclear', '2 cups water', '½–1 cup berries optional'] },
+                  { time: '6 pm', label: 'Dinner', items: ['Follow food list', 'Follow plate guide'] }
+                ].map(meal => (
+                  <div key={meal.time} style={{
+                    display: 'flex',
+                    gap: '12px',
+                    padding: '12px',
+                    background: '#f5f3f0',
+                    borderRadius: '12px',
+                    alignItems: 'flex-start'
+                  }}>
+                    <div style={{ minWidth: '60px' }}>
+                      <div style={{ fontSize: '11px', color: '#6b8f51', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {meal.time}
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#4a5550', fontWeight: '500', marginTop: '2px' }}>
+                        {meal.label}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {meal.items.map(item => (
+                        <span key={item} style={{
+                          fontSize: '12px',
+                          color: '#5a5a5a',
+                          background: 'white',
+                          padding: '3px 8px',
+                          borderRadius: '8px',
+                          border: '1px solid #e0ddd8'
+                        }}>
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Details notes */}
+              <div style={{
+                marginTop: '16px',
+                padding: '14px',
+                background: '#f0f6ec',
+                borderRadius: '12px',
+                borderLeft: '3px solid #6b8f51'
+              }}>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#4a7a36', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Details
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {[
+                    'Breakfast smoothie = berries + water or unsweetened almond/macadamia milk + 1 scoop Mediclear',
+                    'Afternoon shake is optional — extra liver support + hydration',
+                    'Protein: use plant protein for one meal + animal for the other (not both animal)',
+                    'Starch at dinner is very important — helps lower stress hormone + deepen sleep',
+                    'Starch at lunch is optional; include it if hungry between meals'
+                  ].map(note => (
+                    <div key={note} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                      <span style={{ color: '#6b8f51', fontSize: '12px', marginTop: '1px', flexShrink: 0 }}>•</span>
+                      <span style={{ fontSize: '12px', color: '#4a5550', lineHeight: 1.5 }}>{note}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Plate Proportions */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                Detox Plate Proportions
+              </h3>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <svg width="160" height="120" viewBox="0 0 160 120" role="img" aria-label="Detox plate: half non-starch veggies, quarter protein, quarter starch">
+                  <rect x="2" y="2" width="156" height="116" rx="14" fill="#ffffff" stroke="#e0ddd8" strokeWidth="4" />
+                  <rect x="6" y="6" width="74" height="108" rx="10" fill="#3c9d6b" />
+                  <rect x="82" y="6" width="72" height="52" rx="10" fill="#e07a5f" />
+                  <rect x="82" y="62" width="72" height="52" rx="10" fill="#3d7a8a" />
+                </svg>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '12px', height: '12px', background: '#3c9d6b', borderRadius: '50%', flexShrink: 0 }} />
+                    <span style={{ fontSize: '13px', color: '#7a7a7a' }}>½ Non-Starch Veggies</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '12px', height: '12px', background: '#e07a5f', borderRadius: '50%', flexShrink: 0 }} />
+                    <span style={{ fontSize: '13px', color: '#7a7a7a' }}>¼ Protein</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '12px', height: '12px', background: '#3d7a8a', borderRadius: '50%', flexShrink: 0 }} />
+                    <span style={{ fontSize: '13px', color: '#7a7a7a' }}>¼ Healthy Starch</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Approved Detox Foods */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <button
+                onClick={() => setExpandedDetoxSection(expandedDetoxSection === 'foods' ? null : 'foods')}
+                style={{
+                  width: '100%', padding: '0', border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Utensils size={20} color="#6b8f51" />
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                    Approved Detox Foods
+                  </h3>
+                </div>
+                <ChevronDown size={18} color="#7a7a7a" style={{
+                  transform: expandedDetoxSection === 'foods' ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }} />
+              </button>
+
+              {expandedDetoxSection === 'foods' && (
+                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    {
+                      key: 'plantProtein',
+                      label: 'Plant Protein',
+                      color: '#3c9d6b',
+                      items: ['Beans (all types)', 'Lentils', 'Chickpeas', 'Split peas', 'Quinoa', 'Hemp hearts', 'Pea, pumpkin, or hemp powder', 'Organic sprouted tofu', 'Organic tempeh', 'Organic natto'],
+                      note: 'No canned baked beans'
+                    },
+                    {
+                      key: 'animalProtein',
+                      label: 'Animal Protein',
+                      color: '#e07a5f',
+                      items: ['Fish (from low mercury list)', 'Sardines', 'Anchovies', 'Shrimp', 'Scallops', 'Chicken', 'Turkey', 'Duck', 'Cornish hen', 'Beef'],
+                      note: 'All beef = 100% grass-fed · Chicken/pork/lamb = pasture-raised'
+                    },
+                    {
+                      key: 'starch',
+                      label: 'Healthy Starch (¼ plate)',
+                      color: '#3d7a8a',
+                      items: ['Sweet potatoes / yams', 'Squashes', 'Regular potatoes', 'Carrots', 'Beets', 'Plantains', 'Turnips, parsnips, yucca'],
+                      note: null
+                    },
+                    {
+                      key: 'veggies',
+                      label: 'Non-Starch Veggies (½ plate)',
+                      color: '#3c9d6b',
+                      items: ['Broccoli', 'Brussels sprouts', 'Lettuce', 'Arugula / baby greens', 'Mustard / collard greens', 'Bok choy', 'Kale, chard', 'Cabbage', 'Asparagus', 'Cauliflower', 'Bell peppers', 'Sprouts', 'Green beans', 'Green peas'],
+                      note: 'Accessory veggies: artichoke, tomatoes, cucumber, celery, zucchini · No eggplant'
+                    },
+                    {
+                      key: 'fats',
+                      label: 'Fats',
+                      color: '#a89d7f',
+                      items: ['Avocado', 'Avocado oil', 'Olives', 'Olive oil', 'Chia seeds', 'Flax seeds'],
+                      note: null
+                    },
+                    {
+                      key: 'fruits',
+                      label: 'Fruits (smoothies only)',
+                      color: '#7b5ea7',
+                      items: ['Blueberries', 'Raspberries', 'Blackberries', 'Cherries'],
+                      note: 'Frozen is ok · Use in breakfast shake and optional afternoon shake'
+                    }
+                  ].map(category => (
+                    <div key={category.key}>
+                      <button
+                        onClick={() => setExpandedDetoxFood(expandedDetoxFood === category.key ? null : category.key)}
+                        style={{
+                          width: '100%', padding: '12px', border: '2px solid #e0ddd8', borderRadius: '12px',
+                          background: expandedDetoxFood === category.key ? '#f5f3f0' : 'white',
+                          cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ width: '10px', height: '10px', background: category.color, borderRadius: '50%', flexShrink: 0 }} />
+                          <span style={{ fontSize: '14px', color: '#4a5550', fontWeight: '500' }}>{category.label}</span>
+                        </div>
+                        <ChevronDown size={18} color="#7a7a7a" style={{
+                          transform: expandedDetoxFood === category.key ? 'rotate(180deg)' : 'rotate(0deg)',
+                          transition: 'transform 0.3s ease'
+                        }} />
+                      </button>
+                      {expandedDetoxFood === category.key && (
+                        <div style={{
+                          padding: '12px 14px',
+                          background: '#fafaf8',
+                          border: '1px solid #e0ddd8',
+                          borderTop: 'none',
+                          borderRadius: '0 0 12px 12px'
+                        }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: category.note ? '10px' : '0' }}>
+                            {category.items.map(item => (
+                              <span key={item} style={{
+                                fontSize: '12px',
+                                color: '#4a5550',
+                                background: 'white',
+                                padding: '4px 10px',
+                                borderRadius: '20px',
+                                border: `1px solid ${category.color}40`
+                              }}>
+                                {item}
+                              </span>
+                            ))}
+                          </div>
+                          {category.note && (
+                            <div style={{
+                              fontSize: '11px',
+                              color: '#8a7a6a',
+                              fontStyle: 'italic',
+                              paddingTop: category.items.length > 0 ? '6px' : '0',
+                              borderTop: '1px solid #e8e6e1'
+                            }}>
+                              {category.note}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Healthy Mindset */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <button
+                onClick={() => setExpandedDetoxSection(expandedDetoxSection === 'mindset' ? null : 'mindset')}
+                style={{
+                  width: '100%', padding: '0', border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Info size={20} color="#6b8f51" />
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                    Healthy Mindset
+                  </h3>
+                </div>
+                <ChevronDown size={18} color="#7a7a7a" style={{
+                  transform: expandedDetoxSection === 'mindset' ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }} />
+              </button>
+              {expandedDetoxSection === 'mindset' && (
+                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#4a7a36', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Basic food principles
+                    </div>
+                    {[
+                      'Do not eat fruit (berries) 30 min before or 1 hour after meals (excludes smoothie)',
+                      'Do not drink large amounts, cold, or carbonated liquids 30 min before or 1 hour after meals',
+                      'Chew slowly and thoroughly',
+                      'Lunch can be raw veggies (easier digestion mid-day) or cooked',
+                      'Dinner should be more cooked veggies'
+                    ].map(rule => (
+                      <div key={rule} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '4px' }}>
+                        <span style={{ color: '#6b8f51', fontSize: '12px', marginTop: '1px', flexShrink: 0 }}>•</span>
+                        <span style={{ fontSize: '13px', color: '#4a5550', lineHeight: 1.5 }}>{rule}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#4a7a36', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Half your plate must be non-starch veggies
+                    </div>
+                    {[
+                      'Do not limit your plate — eat until you feel satiated',
+                      'Always add more veggies if you feel hungry at that meal',
+                      'Do not measure calories'
+                    ].map(rule => (
+                      <div key={rule} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '4px' }}>
+                        <span style={{ color: '#6b8f51', fontSize: '12px', marginTop: '1px', flexShrink: 0 }}>•</span>
+                        <span style={{ fontSize: '13px', color: '#4a5550', lineHeight: 1.5 }}>{rule}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Important Notes — 4 expandable sub-sections */}
+            {[
+              {
+                key: 'hydration',
+                icon: <Droplet size={20} color="#6b8f51" />,
+                title: 'Help Your Body Detox',
+                groups: [
+                  {
+                    label: 'Hydration',
+                    items: [
+                      'Aim for 8–10 cups fluids daily',
+                      'Includes smoothie and herbal teas',
+                      'Good herbal teas: mint, ginger, chamomile'
+                    ]
+                  },
+                  {
+                    label: 'Sweating',
+                    items: [
+                      'Try to do very light exercise to sweat a little daily',
+                      'Dry or infrared sauna is a great idea if available'
+                    ]
+                  }
+                ]
+              },
+              {
+                key: 'rest',
+                icon: <Moon size={20} color="#6b8f51" />,
+                title: 'Rest + Exercise',
+                groups: [
+                  {
+                    label: 'Rest',
+                    items: [
+                      'Try to sleep by 10pm to give liver more detox time',
+                      'If you feel tired in the first couple days, listen to your body and rest',
+                      'If you feel more energy during detox — still rest; do not use that energy for more activities'
+                    ]
+                  },
+                  {
+                    label: 'Exercise',
+                    items: [
+                      'Walking or very light exercise only',
+                      'Do not do high intensity workouts during detox'
+                    ]
+                  }
+                ]
+              },
+              {
+                key: 'supplements',
+                icon: <Pill size={20} color="#6b8f51" />,
+                title: 'Medications + Supplements',
+                groups: [
+                  {
+                    label: 'Medications',
+                    items: [
+                      'Stay on all your prescription medications',
+                      'May need to check with your doctor for contraindications'
+                    ]
+                  },
+                  {
+                    label: 'Supplements',
+                    items: [
+                      'Mediclear powder = multivitamin + protein',
+                      'During detox: pause your regular multivitamin',
+                      'If you dislike the taste: add 1 tsp raw cacao powder'
+                    ]
+                  }
+                ]
+              },
+              {
+                key: 'foodDrink',
+                icon: <Info size={20} color="#6b8f51" />,
+                title: 'Food + Drink Rules',
+                groups: [
+                  {
+                    label: 'What to use',
+                    items: [
+                      'Use any spices you love',
+                      'Use clean salt'
+                    ]
+                  },
+                  {
+                    label: 'Avoid',
+                    items: [
+                      'Sugar or sweeteners',
+                      'Vinegar (try to avoid)',
+                      'Caffeinated drinks (try to avoid)',
+                      'Carbonated drinks',
+                      'Alcohol',
+                      'Gum with sugar'
+                    ]
+                  }
+                ]
+              }
+            ].map(section => (
+              <div key={section.key} style={{
+                background: 'white',
+                borderRadius: '16px',
+                padding: '20px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              }}>
+                <button
+                  onClick={() => setExpandedDetoxSection(expandedDetoxSection === section.key ? null : section.key)}
+                  style={{
+                    width: '100%', padding: '0', border: 'none', background: 'transparent',
+                    cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {section.icon}
+                    <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                      {section.title}
+                    </h3>
+                  </div>
+                  <ChevronDown size={18} color="#7a7a7a" style={{
+                    transform: expandedDetoxSection === section.key ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s ease'
+                  }} />
+                </button>
+                {expandedDetoxSection === section.key && (
+                  <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {section.groups.map(group => (
+                      <div key={group.label} style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#4a7a36', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          {group.label}
+                        </div>
+                        {group.items.map(item => (
+                          <div key={item} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '4px' }}>
+                            <span style={{ color: '#6b8f51', fontSize: '12px', marginTop: '1px', flexShrink: 0 }}>•</span>
+                            <span style={{ fontSize: '13px', color: '#4a5550', lineHeight: 1.5 }}>{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Possible Symptoms */}
+            <div style={{
+              background: 'white',
+              borderRadius: '16px',
+              padding: '20px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <button
+                onClick={() => setExpandedDetoxSection(expandedDetoxSection === 'symptoms' ? null : 'symptoms')}
+                style={{
+                  width: '100%', padding: '0', border: 'none', background: 'transparent',
+                  cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Activity size={20} color="#6b8f51" />
+                  <h3 style={{ margin: 0, fontSize: '16px', color: '#4a5550', fontWeight: '500' }}>
+                    Possible Symptoms During Detox
+                  </h3>
+                </div>
+                <ChevronDown size={18} color="#7a7a7a" style={{
+                  transform: expandedDetoxSection === 'symptoms' ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease'
+                }} />
+              </button>
+              {expandedDetoxSection === 'symptoms' && (
+                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '200px', padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '600', color: '#4a7a36', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Possible symptoms
+                      </div>
+                      {['Low energy', 'Low mood', 'Headache', 'Nausea', 'Skin breakouts', 'Irregular bowel movements'].map(s => (
+                        <div key={s} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+                          <span style={{ color: '#6b8f51', fontSize: '12px', flexShrink: 0 }}>•</span>
+                          <span style={{ fontSize: '13px', color: '#4a5550' }}>{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ flex: 1, minWidth: '200px', padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '600', color: '#4a7a36', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Toxins leave through
+                      </div>
+                      {['Stool', 'Urine', 'Skin', 'Lungs'].map(s => (
+                        <div key={s} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+                          <span style={{ color: '#6b8f51', fontSize: '12px', flexShrink: 0 }}>•</span>
+                          <span style={{ fontSize: '13px', color: '#4a5550' }}>{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ padding: '12px', background: '#f0f6ec', borderRadius: '12px', borderLeft: '3px solid #6b8f51' }}>
+                    <div style={{ fontSize: '13px', color: '#4a5550', lineHeight: 1.6 }}>
+                      These are called <strong>Herxheimer reactions</strong> — signs that your body is eliminating stored toxins through all available pathways. Most common in days 1–2 and should resolve by day 3. Do not take medications to relieve them; instead follow the hydration and rest guidelines.
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#c0392b', marginTop: '8px', fontStyle: 'italic' }}>
+                      If symptoms are severe or last past day 3, discontinue the detox and contact your practitioner.
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Responsible Use */}
+            <div style={{
+              padding: '16px 20px',
+              background: '#f5f3f0',
+              borderRadius: '14px',
+              borderLeft: '3px solid #a89d7f'
+            }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', color: '#7a6a5a', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Be responsible with your health
+              </div>
+              {[
+                'This detox is not a gut or intestinal cleanse and does not replace any protocol to address underlying imbalances.',
+                'This detox must never replace your regular healthy nutrition plan.',
+                'Can be done for 3 weeks initially, then only 1 week every 3–4 months — not more often than that.'
+              ].map((note, i) => (
+                <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '4px' }}>
+                  <span style={{ color: '#a89d7f', fontSize: '12px', flexShrink: 0, marginTop: '1px' }}>{i + 1}.</span>
+                  <span style={{ fontSize: '12px', color: '#6b5d4f', lineHeight: 1.5 }}>{note}</span>
+                </div>
+              ))}
+            </div>
+
           </div>
         )}
       </div>
