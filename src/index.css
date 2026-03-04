@@ -14,3 +14,8 @@ body {
 input {
   box-sizing: border-box;
 }
+
+/* Hide scrollbar for tab nav on mobile */
+.tab-scroll::-webkit-scrollbar {
+  display: none;
+}

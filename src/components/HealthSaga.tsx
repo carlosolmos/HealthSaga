@@ -646,35 +646,41 @@ const HealthSaga = () => {
         </div>
       </div>
 
-      <div style={{ 
-        display: 'flex', 
+      <div style={{
         background: 'white',
         borderBottom: '1px solid #e0ddd8',
         position: 'sticky',
         top: 0,
-        zIndex: 10
+        zIndex: 10,
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch'
       }}>
-        {['today', 'meals', 'metrics', 'mindfulness', 'detox'].map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            style={{
-              flex: 1,
-              padding: '16px',
-              border: 'none',
-              background: activeTab === tab ? '#f5f3f0' : 'white',
-              color: activeTab === tab ? '#3d7a8a' : '#9b9b9b',
-              fontSize: '14px',
-              fontWeight: activeTab === tab ? '500' : '400',
-              cursor: 'pointer',
-              borderBottom: activeTab === tab ? '2px solid #5492a3' : 'none',
-              transition: 'all 0.3s ease',
-              textTransform: 'capitalize'
-            }}
-          >
-            {tab}
-          </button>
-        ))}
+        <div style={{ display: 'flex', minWidth: 'max-content' }}>
+          {['detox', 'today', 'meals', 'metrics', 'mindfulness'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: '16px 20px',
+                border: 'none',
+                background: activeTab === tab ? '#f5f3f0' : 'white',
+                color: activeTab === tab ? '#3d7a8a' : '#9b9b9b',
+                fontSize: '14px',
+                fontWeight: activeTab === tab ? '500' : '400',
+                cursor: 'pointer',
+                borderBottom: activeTab === tab ? '2px solid #5492a3' : '2px solid transparent',
+                transition: 'all 0.3s ease',
+                textTransform: 'capitalize',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
+              }}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
