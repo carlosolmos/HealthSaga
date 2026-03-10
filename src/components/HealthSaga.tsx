@@ -2635,6 +2635,21 @@ const HealthSaga = () => {
                       </div>
                     ))}
                   </div>
+                  <div style={{ padding: '12px', background: '#f5f3f0', borderRadius: '12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#4a7a36', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      In case of snacking
+                    </div>
+                    {[
+                      '🍵 drink herbal teas',
+                      '🫐 berries are okay',
+                      '🥕 veggies and humus are great'
+                    ].map(rule => (
+                      <div key={rule} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginBottom: '4px' }}>
+                        <span style={{ color: '#6b8f51', fontSize: '12px', marginTop: '1px', flexShrink: 0 }}>•</span>
+                        <span style={{ fontSize: '13px', color: '#4a5550', lineHeight: 1.5 }}>{rule}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
